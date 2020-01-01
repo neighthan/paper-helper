@@ -12,7 +12,7 @@
     <v-app id="inspire">
       <v-card
         class="mx-auto"
-        v-for="pd in paper_data"
+        v-for="pd of paper_data"
         :key="pd.time"
       >
         <v-card-title>{{pd.title}}</v-card-title>
