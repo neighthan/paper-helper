@@ -47,7 +47,7 @@
           <v-btn
             color="primary"
             text
-            :disabled="!paper_data_loaded"
+            :disabled="!(paper_data_loaded && tags_loaded && metadata_loaded)"
             @click="add_paper(true)"
           >
             Save

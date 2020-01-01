@@ -41,7 +41,7 @@ let vue = new Vue({
 
 chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
   let current_tab = tabs[0]
-  if (current_tab.url.startsWith("chrome://")) {
+  if (current_tab.url.startsWith("chrome://") || current_tab.url.startsWith("chrome-extension://")) {
     vue.url = current_tab.url
     vue.metadata_loaded = true
     return
