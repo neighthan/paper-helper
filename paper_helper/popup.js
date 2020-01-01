@@ -60,7 +60,12 @@ let pd_promise = new Promise(function(resolve) {
   })
 })
 pd_promise.then(function(result) {
-  vue.paper_data = result["paper_data"]
+  let paper_data = result["paper_data"]
+  if (paper_data != null) {
+    vue.paper_data = paper_data
+  } else {
+    vue.paper_data = []
+  }
   vue.paper_data_loaded = true
 })
 
@@ -70,6 +75,11 @@ let tags_promise = new Promise(function(resolve) {
   })
 })
 tags_promise.then(function(result) {
-  vue.all_tags = result["tags"]
+  let all_tags = result["tags"]
+  if (all_tags != null) {
+    vue.all_tags = all_tags
+  } else {
+    vue.all_tags = []
+  }
   vue.tags_loaded = true
 })
