@@ -15,15 +15,26 @@ let vue = new Vue({
   },
   methods: {
     add_paper: function(save) {
+      let priority = parseFloat(this.priority)
       if(save) {
         let new_paper_data = {
           ...this.metadata,
           title: this.title,
           url: this.url,
-          priority: parseFloat(this.priority),
+          priority: priority,
           tags: this.tags,
         }
-        this.paper_data.push(new_paper_data)
+        let inserted = false
+        for ([idx, data] of this.paper_data.entries()) {
+          if (data.priority < priority) {
+            this.paper_data.splice(idx, 0, new_paper_data)
+            inserted = true
+            break
+          }
+        }
+        if (!inserted) {
+          this.paper_data.push(new_paper_data)
+        }
         this.all_tags = [...new Set(this.all_tags.concat(this.tags))]
         chrome.storage.local.set({paper_data: this.paper_data})
         chrome.storage.local.set({tags: this.all_tags})
