@@ -1,0 +1,39 @@
+<!-- template taken from https://vuetifyjs.com/en/getting-started/quick-start -->
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="roboto_fonts.css" rel="stylesheet">
+  <link href="materialdesignicons.min.css" rel="stylesheet">
+  <link href="vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+  <div id="app">
+    <v-app id="inspire">
+      <v-card
+        class="mx-auto"
+        v-for="pd in paper_data"
+        :key="pd.time"
+      >
+        <v-card-title>{{pd.title}}</v-card-title>
+        <v-card-text>
+          {{pd.url}} {{pd.tags}} {{pd.priority}} {{pd.time}}
+        </v-card-text>
+        <v-card-actions>
+          <v-btn text><v-icon>mdi-plus</v-icon></v-btn>
+          <v-btn text><v-icon>mdi-minus</v-icon></v-btn>
+          <v-btn
+            text
+          >
+            Open
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-app>
+  </div>
+
+  <script src="vue.js"></script>
+  <script src="vuetify.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
