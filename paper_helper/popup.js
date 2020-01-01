@@ -6,23 +6,24 @@ let vue = new Vue({
     url: "",
     tags: "",
     priority: "0",
-    paper_data: {},
+    paper_data: [],
     all_tags: [],
+    metadata: {},
     paper_data_loaded: false,
     tags_loaded: false,
+    metadata_loaded: false,
   },
   methods: {
     add_paper: function(save) {
       if(save) {
-        let time = (new Date()).getTime()
         let new_paper_data = {
+          ...this.metadata,
           title: this.title,
           url: this.url,
           priority: parseFloat(this.priority),
           tags: this.tags,
-          time,
         }
-        this.paper_data[time] = new_paper_data
+        this.paper_data.push(new_paper_data)
         this.all_tags = [...new Set(this.all_tags.concat(this.tags))]
         chrome.storage.local.set({paper_data: this.paper_data})
         chrome.storage.local.set({tags: this.all_tags})
@@ -39,9 +40,17 @@ let vue = new Vue({
 })
 
 chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-  chrome.tabs.sendMessage(tabs[0].id, {method: "extract_metadata"}, function(response) {
-    console.log(response)
+  let current_tab = tabs[0]
+  if (current_tab.url.startsWith("chrome://")) {
+    vue.url = current_tab.url
+    vue.metadata_loaded = true
+    return
+  }
+  chrome.tabs.sendMessage(current_tab.id, {method: "extract_metadata"}, function(response) {
     vue.title = response.title
+    vue.url = response.url
+    vue.metadata = response
+    vue.metadata_loaded = true
   });
 });
 
@@ -51,7 +60,6 @@ let pd_promise = new Promise(function(resolve) {
   })
 })
 pd_promise.then(function(result) {
-  console.log(result)
   vue.paper_data = result["paper_data"]
   vue.paper_data_loaded = true
 })
@@ -62,7 +70,6 @@ let tags_promise = new Promise(function(resolve) {
   })
 })
 tags_promise.then(function(result) {
-  console.log(result)
   vue.all_tags = result["tags"]
   vue.tags_loaded = true
 })

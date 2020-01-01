@@ -1,7 +1,16 @@
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
     if (request.method == "extract_metadata") {
-      let metadata = {url: window.location.href, time: new Date().getTime()}
+      let metadata = {
+        url: window.location.href,
+        time: new Date().getTime(),
+        title: "",
+        date: "",
+        arxiv_id: "",
+        pdf_url: "",
+        authors: [],
+        abstract: "",
+      }
       let host = window.location.host
 
       if (host === "arxiv.org") {
@@ -15,9 +24,7 @@ chrome.runtime.onMessage.addListener(
       } else {
         try {
           metadata["title"] = document.getElementsByTagName("h1")[0].innerText
-        } catch (e) {
-          metadata["title"] = ""
-        }
+        } catch {}
       }
       sendResponse(metadata)
     } else {
