@@ -4,8 +4,10 @@ let vue = new Vue({
   data: {
     title: "",
     url: "",
-    tags: "",
+    tags: [],
     priority: "0",
+    authors: "",
+    abstract: "",
     paper_data: [],
     all_tags: [],
     metadata: {},
@@ -23,6 +25,8 @@ let vue = new Vue({
           url: this.url,
           priority: priority,
           tags: this.tags,
+          authors: this.authors.split(", "),
+          abstract: this.abstract,
         }
         let inserted = false
         for ([idx, data] of this.paper_data.entries()) {
@@ -41,8 +45,10 @@ let vue = new Vue({
       }
       this.title = ""
       this.url = ""
-      this.tags = ""
+      this.tags = []
       this.priority = "0"
+      this.authors = ""
+      this.abstract = ""
     },
     open_main_page: function() {
       chrome.tabs.create({url: "main.html"})
@@ -60,6 +66,8 @@ chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
   chrome.tabs.sendMessage(current_tab.id, {method: "extract_metadata"}, function(response) {
     vue.title = response.title
     vue.url = response.url
+    vue.authors = response.authors.join(", ")
+    vue.abstract = response.abstract
     vue.metadata = response
     vue.metadata_loaded = true
   });

@@ -10,22 +10,14 @@
 <body>
   <div id="app">
     <v-app id="inspire">
-      <v-card>
-        <v-card-title
-          class="headline grey lighten-2"
-          primary-title
-        >
-          Add Paper
-        </v-card-title>
-
+      <!-- max size for a popup, apparently -->
+      <v-card min-width="800" min-height="600">
         <v-card-text>
           <v-text-field
             label="Title"
             v-model="title"
-          ></v-text-field>
-          <v-text-field
-            label="URL"
-            v-model="url"
+            dense
+            autofocus
           ></v-text-field>
           <v-combobox
             label="Tags"
@@ -33,17 +25,35 @@
             :items="all_tags"
             multiple
             :delimiters="[', ']"
+            dense
           ></v-combobox>
           <v-text-field
             label="Priority"
             v-model="priority"
+            dense
+          ></v-text-field>
+          <v-textarea
+            label="Abstract"
+            v-model="abstract"
+            rows=11
+            no-resize
+            dense
+          ></v-textarea>
+          <v-text-field
+            label="Authors"
+            v-model="authors"
+            dense
+          ></v-text-field>
+          <v-text-field
+            label="URL"
+            v-model="url"
+            dense
           ></v-text-field>
         </v-card-text>
 
         <v-divider></v-divider>
 
         <v-card-actions>
-          <v-spacer></v-spacer>
           <v-btn
             color="primary"
             text
@@ -58,14 +68,11 @@
             @click="add_paper(false)"
           >
             Cancel
-          </v-btn
-          >
+          </v-btn>
+          <v-spacer></v-spacer>
+          <v-btn text @click="open_main_page()"><v-icon>open_in_new</v-icon></v-btn>
         </v-card-actions>
       </v-card>
-      <v-btn
-        text
-        @click="open_main_page()"
-      >Open Main Page</v-btn>
     </v-app>
   </div>
 
