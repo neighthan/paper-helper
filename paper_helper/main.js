@@ -6,6 +6,11 @@ let vue = new Vue({
     query: "",
     query_tags: "",
   },
+  methods: {
+    open_link: function (url) {
+      chrome.tabs.create({url})
+    }
+  },
   computed: {
     filtered_paper_data: function () {
       let data = this.paper_data // direct reference; don't mutate!
