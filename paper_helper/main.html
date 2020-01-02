@@ -1,4 +1,3 @@
-<!-- template taken from https://vuetifyjs.com/en/getting-started/quick-start -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -9,25 +8,54 @@
 </head>
 <body>
   <div id="app">
-    <v-app id="inspire">
-      <v-card
-        class="mx-auto"
-        v-for="pd of paper_data"
-        :key="pd.time"
-      >
-        <v-card-title>{{pd.title}}</v-card-title>
-        <v-card-text>
-          {{pd.url}} {{pd.tags}} {{pd.priority}} {{pd.time}}
-        </v-card-text>
-        <v-card-actions>
-          <v-btn text><v-icon>swap_vert</v-icon></v-btn>
-          <v-btn
-            text
+    <v-app>
+      <!-- <v-navigation-drawer app> -->
+      <!-- </v-navigation-drawer> -->
+
+      <v-app-bar app>
+        <v-col cols="12" sm="6" md="3">
+          <v-text-field
+            v-model="query"
+            append-icon="search"
+            hide-details
+          ></v-text-field>
+        </v-col>
+
+        <v-col cols="12" sm="6" md="3">
+          <v-text-field
+            label="Tags"
+            v-model="query_tags"
+            append-icon="search"
+            hide-details
+          ></v-text-field>
+        </v-col>
+      </v-app-bar>
+
+      <v-content>
+        <v-container fluid>
+          <v-card
+            class="mx-auto"
+            v-for="pd of filtered_paper_data"
+            :key="pd.time"
           >
-            Open
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+            <v-card-title>{{pd.title}}</v-card-title>
+            <v-card-text>
+              {{pd.url}} {{pd.tags}} {{pd.priority}} {{pd.time}}
+            </v-card-text>
+            <v-card-actions>
+              <v-btn text><v-icon>swap_vert</v-icon></v-btn>
+              <v-btn
+                text
+              >
+                Open
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-container>
+      </v-content>
+
+      <v-footer app>
+      </v-footer>
     </v-app>
   </div>
 
