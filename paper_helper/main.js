@@ -1,6 +1,6 @@
 let vue = new Vue({
   el: '#app',
-  vuetify: new Vuetify(),
+  vuetify: new Vuetify({icons: {iconfont: "md"}}),
   data: {
     paper_data: [],
     paper_data_loaded: false,
