@@ -24,6 +24,21 @@ let vue = new Vue({
       this.show_undelete_snackbar = false
       this.paper_data.splice(this.deleted_pd_idx, 0, this.deleted_pd)
     },
+    download_data: function () {
+      const vue = this
+      chrome.storage.local.get(["tags"], function(result) {
+        const date = new Date().toLocaleDateString().replace(/\//g, "_")
+        const fname = `paper_data_backup__${date}.json`
+        const mime_type = "text/json"
+        const all_data = {paper_data: vue.paper_data, tags: result.tags}
+        const blob = new Blob([JSON.stringify(all_data)], {type: mime_type})
+        const a = document.createElement("a")
+        a.download = fname
+        a.href = window.URL.createObjectURL(blob)
+        a.dataset.downloadurl = [mime_type, a.download, a.href].join(":")
+        a.click()
+      })
+    },
     activate_slider: function (paper_data) {
       paper_data.show_slider = true
 
