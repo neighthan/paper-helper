@@ -7,10 +7,22 @@ let vue = new Vue({
     query_tags: "",
     min_priority: -100,
     max_priority: 100,
+    deleted_pd: {},
+    deleted_pd_idx: -1,
+    show_undelete_snackbar: false,
   },
   methods: {
     open_link: function (url) {
       chrome.tabs.create({url})
+    },
+    delete_pd: function (idx) {
+      this.deleted_pd = this.paper_data.splice(idx, 1)[0]
+      this.deleted_pd_idx = idx
+      this.show_undelete_snackbar = true
+    },
+    undelete_pd: function () {
+      this.show_undelete_snackbar = false
+      this.paper_data.splice(this.deleted_pd_idx, 0, this.deleted_pd)
     },
     activate_slider: function (paper_data) {
       paper_data.show_slider = true
