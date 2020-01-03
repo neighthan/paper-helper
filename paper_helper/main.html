@@ -40,22 +40,40 @@
           >
             <v-card-title>{{pd.title}}</v-card-title>
             <v-card-text>
-              {{pd.tags}} {{pd.priority}} {{pd.time}}
+              {{pd.tags}} {{pd.time}}
             </v-card-text>
             <v-card-actions>
-              <v-btn text><v-icon>swap_vert</v-icon></v-btn>
               <v-tooltip right>
                 <template v-slot:activator="{on}">
                   <v-btn
                     text
-                    @click="open_link(pd.url)"
                     v-on="on"
+                    @click="open_link(pd.url)"
                   >
                     Open
                   </v-btn>
                 </template>
                 <span>{{pd.url}}</span>
               </v-tooltip>
+
+              <v-tooltip top v-if="!pd.show_slider">
+                <template v-slot:activator="{on}">
+                  <v-btn text v-on="on" @mousedown="activate_slider(pd)"><v-icon>swap_vert</v-icon></v-btn>
+                </template>
+                <span>{{pd.priority}}</span>
+              </v-tooltip>
+              <v-col v-else cols="8" sm="4" md="2">
+                <v-slider
+                  v-model="pd.priority"
+                  :min="min_priority"
+                  :max="max_priority"
+                  thumb-label="always"
+                  thumb-size="24"
+                  hide-details
+                  height="5"
+                  :ref="'slider' + pd.time"
+                ></v-slider>
+              </v-col>
             </v-card-actions>
           </v-card>
         </v-container>
