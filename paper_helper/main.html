@@ -33,62 +33,63 @@
 
       <v-content>
         <v-container fluid>
-          <!-- <v-expansion-panel
-            v-for="pd of filtered_paper_data"
-            :key="pd.time"
-          > -->
-            <!-- <v-expansion-panel-header> -->
-              <v-card
-                class="mx-auto"
-                v-for="(pd, idx) of filtered_paper_data"
-                :key="pd.time"
-              >
-                <v-card-title>{{pd.title}}</v-card-title>
-                <v-card-text>
-                  {{pd.tags}} {{pd.time}}
-                </v-card-text>
-                <v-card-actions>
-                  <v-tooltip right>
-                    <template v-slot:activator="{on}">
-                      <v-btn
-                        text
-                        v-on="on"
-                        @click="open_link(pd.url)"
-                      >
-                        Open
-                      </v-btn>
-                    </template>
-                    <span>{{pd.url}}</span>
-                  </v-tooltip>
+          <v-expansion-panels accordion>
+            <v-expansion-panel
+              v-for="(pd, idx) of filtered_paper_data"
+              :key="pd.time"
+            >
+              <v-expansion-panel-header hide-actions>
+                <v-card
+                  class="mx-auto"
+                  flat
+                >
+                  <v-card-title>{{pd.title}}</v-card-title>
+                  <v-card-text>
+                    {{pd.tags}} {{pd.time}}
+                  </v-card-text>
+                  <v-card-actions>
+                    <v-tooltip right>
+                      <template v-slot:activator="{on}">
+                        <v-btn
+                          text
+                          v-on="on"
+                          @click.native.stop="open_link(pd.url)"
+                        >
+                          Open
+                        </v-btn>
+                      </template>
+                      <span>{{pd.url}}</span>
+                    </v-tooltip>
 
-                  <v-tooltip top v-if="!pd.show_slider">
-                    <template v-slot:activator="{on}">
-                      <v-btn text v-on="on" @mousedown="activate_slider(pd)"><v-icon>swap_vert</v-icon></v-btn>
-                    </template>
-                    <span>{{pd.priority}}</span>
-                  </v-tooltip>
-                  <v-col v-else cols="8" sm="4" md="2">
-                    <v-slider
-                      v-model="pd.priority"
-                      :min="min_priority"
-                      :max="max_priority"
-                      thumb-label="always"
-                      thumb-size="24"
-                      hide-details
-                      height="5"
-                      :ref="'slider' + pd.time"
-                    ></v-slider>
-                  </v-col>
-                  <v-btn text @click="delete_pd(idx)">
-                    <v-icon>delete</v-icon>
-                  </v-btn>
-                </v-card-actions>
-              </v-card>
-            <!-- </v-expansion-panel-header>
-            <v-expansion-panel-content>
-              Testing
-            </v-expansion-panel-content>
-          </v-expansion-panel> -->
+                    <v-tooltip top v-if="!pd.show_slider">
+                      <template v-slot:activator="{on}">
+                        <v-btn text v-on="on" @mousedown.native.stop="activate_slider(pd)"><v-icon>swap_vert</v-icon></v-btn>
+                      </template>
+                      <span>{{pd.priority}}</span>
+                    </v-tooltip>
+                    <v-col v-else cols="8" sm="4" md="2">
+                      <v-slider
+                        v-model="pd.priority"
+                        :min="min_priority"
+                        :max="max_priority"
+                        thumb-label="always"
+                        thumb-size="24"
+                        hide-details
+                        height="5"
+                        :ref="'slider' + pd.time"
+                      ></v-slider>
+                    </v-col>
+                    <v-btn text @click.native.stop="delete_pd(idx)">
+                      <v-icon>delete</v-icon>
+                    </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                {{pd.abstract}}
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
           <v-snackbar v-model="show_undelete_snackbar">
             Data deleted.
             <v-btn text color="red" @click="undelete_pd">Undo</v-btn>
