@@ -7,6 +7,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
 
   <style>
+    .abstract {
+      font-size: medium;
+    }
+    .v-expansion-panel-header {
+      padding: 10px 16px;
+    }
+    .v-card__title {
+      padding: 0px;
+    }
+    .v-card__actions {
+      padding: 0px;
+    }
     .v-chip {
       margin-right: 4px;
     }
@@ -102,7 +114,9 @@
                 </v-card>
               </v-expansion-panel-header>
               <v-expansion-panel-content>
-                {{pd.abstract}}
+                <span class="abstract">
+                  {{pd.abstract}}
+                </span>
               </v-expansion-panel-content>
             </v-expansion-panel>
           </v-expansion-panels>
