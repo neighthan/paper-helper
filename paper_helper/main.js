@@ -93,5 +93,6 @@ pd_promise.then(function(result) {
     // these don't need to be reactive; assign later just in case it speeds up rendering
     paper_data.forEach(pd => pd.search_string = `${pd.title.toLowerCase()} ${pd.abstract.toLowerCase()}`)
     paper_data.forEach(pd => pd.search_tags = new Set(pd.tags.map(tag => tag.toLowerCase())))
+    paper_data.forEach(pd => pd.date_string = new Date(pd.time).toLocaleString("default", {month: "short", year: "numeric"}))
   }
 })

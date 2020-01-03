@@ -45,7 +45,7 @@
                 >
                   <v-card-title>{{pd.title}}</v-card-title>
                   <v-card-text>
-                    {{pd.tags}} {{pd.time}}
+                    {{pd.tags}}
                   </v-card-text>
                   <v-card-actions>
                     <v-tooltip right>
@@ -82,6 +82,8 @@
                     <v-btn text @click.native.stop="delete_pd(idx)">
                       <v-icon>delete</v-icon>
                     </v-btn>
+                    <v-spacer></v-spacer>
+                    {{pd.date_string}}
                   </v-card-actions>
                 </v-card>
               </v-expansion-panel-header>
