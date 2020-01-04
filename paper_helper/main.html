@@ -83,7 +83,7 @@
 
                     <v-tooltip top v-if="!pd.show_slider">
                       <template v-slot:activator="{on}">
-                        <v-btn icon v-on="on" @mousedown.native.stop="activate_slider(pd)">
+                        <v-btn icon v-on="on" @mousedown.native.stop="activate_slider(pd, idx)">
                           <v-icon>swap_vert</v-icon>
                         </v-btn>
                       </template>

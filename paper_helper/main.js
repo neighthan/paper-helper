@@ -44,7 +44,7 @@ const vue = new Vue({
         a.click()
       })
     },
-    activate_slider: function (paper_data) {
+    activate_slider: function (paper_data, idx) {
       paper_data.show_slider = true
 
       /* this is a bit hacky, but I want the slider to follow the mouse without needing
@@ -70,6 +70,7 @@ const vue = new Vue({
           document.onmouseup = null
           document.onclick = null
           paper_data.show_slider = false
+          vue.sort_nearly_sorted_array(vue.paper_data, idx)
           vue.save_data()
         }
         document.onclick = remove_handlers
@@ -81,6 +82,34 @@ const vue = new Vue({
           paper_data.priority = vue.min_priority + (event.pageX - rect.x) / rect.width * (vue.max_priority - vue.min_priority)
         }
       })
+    },
+    sort_nearly_sorted_array: function (array, idx) {
+      // WARNING - this operation is in-place!
+      // array must be an array of objects sorted in descening order by a property
+      // called priority except that the object array[idx] may be out of order.
+      // find new position of this item, shift everything between old and new
+      // over by one
+
+      const obj = array[idx]
+      let new_idx = array.length - 1
+      for (const [idx, e] of array.entries()) {
+        if (obj.priority > e.priority) {
+          new_idx = idx
+          break
+        }
+      }
+      if (new_idx > idx) {
+        // if moving to the right, shift everything left to make room for you,
+        // so you're one actually at (new_idx - 1) afterwards
+        new_idx -= 1
+        const n_shift = new_idx - idx
+        const slice = array.slice(idx + 1, idx + n_shift + 1)
+        array.splice(idx, n_shift + 1, ...slice, obj)
+      } else if (new_idx < idx){
+        const n_shift = idx - new_idx
+        const slice = array.slice(new_idx, new_idx + n_shift)
+        array.splice(new_idx, n_shift + 1, obj, ...slice)
+      }
     },
   },
   computed: {
