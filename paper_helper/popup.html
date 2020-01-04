@@ -19,6 +19,7 @@
             dense
             autofocus
           ></v-text-field>
+          <!-- it's possible to have label chips, but seems too much of a pain -->
           <v-combobox
             label="Tags"
             v-model="tags"
@@ -26,6 +27,7 @@
             multiple
             :delimiters="[', ']"
             dense
+            small-chips
           ></v-combobox>
           <v-text-field
             label="Priority"

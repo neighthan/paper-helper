@@ -17,14 +17,15 @@ const vue = new Vue({
   },
   methods: {
     add_paper: function(save) {
-      let priority = parseFloat(this.priority)
+      const priority = parseFloat(this.priority)
+      const tags = this.tags.map(tag => tag.trim())
       if(save) {
         let new_paper_data = {
           ...this.metadata,
+          tags,
           title: this.title,
           url: this.url,
           priority: priority,
-          tags: this.tags,
           authors: this.authors.split(", "),
           abstract: this.abstract,
         }
@@ -39,7 +40,7 @@ const vue = new Vue({
         if (!inserted) {
           this.paper_data.push(new_paper_data)
         }
-        this.all_tags = [...new Set(this.all_tags.concat(this.tags))]
+        this.all_tags = [...new Set(this.all_tags.concat(tags))]
         chrome.storage.local.set({paper_data: this.paper_data})
         chrome.storage.local.set({tags: this.all_tags})
         chrome.storage.local.get(["n_papers_since_backup"], function(result) {
