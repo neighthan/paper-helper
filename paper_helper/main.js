@@ -10,6 +10,8 @@ const vue = new Vue({
     deleted_pd: {},
     deleted_pd_idx: -1,
     show_undelete_snackbar: false,
+    n_papers_since_backup: 0,
+    n_papers_all_red: 10,
   },
   methods: {
     open_link: function (url) {
@@ -124,13 +126,16 @@ const vue = new Vue({
         data = data.filter(pd => pd.search_string.includes(query))
       }
       return data
-    }
+    },
+    download_red: function () {
+      const red = Math.round(255 * Math.min(this.n_papers_since_backup / this.n_papers_all_red, 1))
+      return `rgba(${red}, 0, 0, 1)`
+    },
   },
 })
 
-chrome.storage.local.get(["paper_data"], function(result) {
+chrome.storage.local.get(["paper_data", "n_papers_since_backup"], function(result) {
   const paper_data = result["paper_data"]
-  console.log(paper_data)
   if (paper_data != null) {
     // do this before assigning to vue so `show_slider` is reactive
     paper_data.forEach(pd => pd.show_slider = false)
@@ -139,5 +144,10 @@ chrome.storage.local.get(["paper_data"], function(result) {
     paper_data.forEach(pd => pd.search_string = `${pd.title.toLowerCase()} ${pd.abstract.toLowerCase()}`)
     paper_data.forEach(pd => pd.search_tags = new Set(pd.tags.map(tag => tag.toLowerCase())))
     paper_data.forEach(pd => pd.date_string = new Date(pd.time).toLocaleString("default", {month: "short", year: "numeric"}))
+  }
+
+  const n_papers_since_backup = result["n_papers_since_backup"]
+  if (n_papers_since_backup != null) {
+    vue.n_papers_since_backup = n_papers_since_backup
   }
 })

@@ -42,6 +42,10 @@ const vue = new Vue({
         this.all_tags = [...new Set(this.all_tags.concat(this.tags))]
         chrome.storage.local.set({paper_data: this.paper_data})
         chrome.storage.local.set({tags: this.all_tags})
+        chrome.storage.local.get(["n_papers_since_backup"], function(result) {
+          const n_papers_since_backup = result["n_papers_since_backup"] || 0
+          chrome.storage.local.set({n_papers_since_backup: n_papers_since_backup + 1})
+        })
       }
       this.title = ""
       this.url = ""
