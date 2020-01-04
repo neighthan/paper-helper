@@ -1,4 +1,4 @@
-let vue = new Vue({
+const vue = new Vue({
   el: '#app',
   vuetify: new Vuetify({icons: {iconfont: "md"}}),
   data: {
@@ -99,13 +99,8 @@ let vue = new Vue({
   },
 })
 
-let pd_promise = new Promise(function(resolve) {
-  chrome.storage.local.get(["paper_data"], function(result) {
-    resolve(result)
-  })
-})
-pd_promise.then(function(result) {
-  let paper_data = result["paper_data"]
+chrome.storage.local.get(["paper_data"], function(result) {
+  const paper_data = result["paper_data"]
   console.log(paper_data)
   if (paper_data != null) {
     // do this before assigning to vue so `show_slider` is reactive

@@ -1,4 +1,4 @@
-let vue = new Vue({
+const vue = new Vue({
   el: '#app',
   vuetify: new Vuetify({icons: {iconfont: "md"}}),
   data: {
@@ -57,7 +57,7 @@ let vue = new Vue({
 })
 
 chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-  let current_tab = tabs[0]
+  const current_tab = tabs[0]
   if (current_tab.url.startsWith("chrome://") || current_tab.url.startsWith("chrome-extension://")) {
     vue.url = current_tab.url
     vue.metadata_loaded = true
@@ -73,13 +73,8 @@ chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
   });
 });
 
-let pd_promise = new Promise(function(resolve) {
-  chrome.storage.local.get(["paper_data"], function(result) {
-    resolve(result)
-  })
-})
-pd_promise.then(function(result) {
-  let paper_data = result["paper_data"]
+chrome.storage.local.get(["paper_data"], function(result) {
+  const paper_data = result["paper_data"]
   if (paper_data != null) {
     vue.paper_data = paper_data
   } else {
@@ -88,13 +83,8 @@ pd_promise.then(function(result) {
   vue.paper_data_loaded = true
 })
 
-let tags_promise = new Promise(function(resolve) {
-  chrome.storage.local.get(["tags"], function(result) {
-    resolve(result)
-  })
-})
-tags_promise.then(function(result) {
-  let all_tags = result["tags"]
+chrome.storage.local.get(["tags"], function(result) {
+  const all_tags = result["tags"]
   if (all_tags != null) {
     vue.all_tags = all_tags
   } else {

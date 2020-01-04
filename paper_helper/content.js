@@ -1,7 +1,7 @@
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
     if (request.method == "extract_metadata") {
-      let metadata = {
+      const metadata = {
         url: window.location.href,
         time: new Date().getTime(),
         title: "",
@@ -11,11 +11,11 @@ chrome.runtime.onMessage.addListener(
         authors: [],
         abstract: "",
       }
-      let host = window.location.host
+      const host = window.location.host
 
       if (host === "arxiv.org") {
-        let head = document.getElementsByTagName("head")[0]
-        let meta_tags = Array(...head.childNodes).filter(node => node.tagName === "META")
+        const head = document.getElementsByTagName("head")[0]
+        const meta_tags = Array(...head.childNodes).filter(node => node.tagName === "META")
         for (key of ["title", "date", "arxiv_id", "pdf_url"]) {
           metadata[key] = meta_tags.filter(node => node.name === `citation_${key}`)[0].content
         }
