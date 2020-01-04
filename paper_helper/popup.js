@@ -18,7 +18,7 @@ const vue = new Vue({
   methods: {
     add_paper: function(save) {
       const priority = parseFloat(this.priority)
-      const tags = this.tags.map(tag => tag.trim())
+      const tags = this.tags.map(tag => tag.trim().toLowerCase())
       if(save) {
         let new_paper_data = {
           ...this.metadata,
