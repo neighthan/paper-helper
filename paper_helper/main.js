@@ -19,10 +19,15 @@ let vue = new Vue({
       this.deleted_pd = this.paper_data.splice(idx, 1)[0]
       this.deleted_pd_idx = idx
       this.show_undelete_snackbar = true
+      this.save_data()
     },
     undelete_pd: function () {
       this.show_undelete_snackbar = false
       this.paper_data.splice(this.deleted_pd_idx, 0, this.deleted_pd)
+      this.save_data()
+    },
+    save_data: function () {
+      chrome.storage.local.set({paper_data: this.paper_data})
     },
     download_data: function () {
       const vue = this
@@ -65,6 +70,7 @@ let vue = new Vue({
           document.onmouseup = null
           document.onclick = null
           paper_data.show_slider = false
+          vue.save_data()
         }
         document.onclick = remove_handlers
         document.onmouseup = remove_handlers
