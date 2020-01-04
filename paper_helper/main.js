@@ -89,28 +89,16 @@ const vue = new Vue({
       // WARNING - this operation is in-place!
       // array must be an array of objects sorted in descening order by a property
       // called priority except that the object array[idx] may be out of order.
-      // find new position of this item, shift everything between old and new
-      // over by one
+      // swap the out-of-order item left or right until it's in order
 
       const obj = array[idx]
-      let new_idx = array.length - 1
-      for (const [idx, e] of array.entries()) {
-        if (obj.priority > e.priority) {
-          new_idx = idx
-          break
-        }
+      while (idx < array.length - 1 && obj.priority <= array[idx + 1].priority) {
+        [array[idx], array[idx + 1]] = [array[idx + 1], array[idx]]
+        idx += 1
       }
-      if (new_idx > idx) {
-        // if moving to the right, shift everything left to make room for you,
-        // so you're one actually at (new_idx - 1) afterwards
-        new_idx -= 1
-        const n_shift = new_idx - idx
-        const slice = array.slice(idx + 1, idx + n_shift + 1)
-        array.splice(idx, n_shift + 1, ...slice, obj)
-      } else if (new_idx < idx){
-        const n_shift = idx - new_idx
-        const slice = array.slice(new_idx, new_idx + n_shift)
-        array.splice(new_idx, n_shift + 1, obj, ...slice)
+      while (idx > 0 && obj.priority > array[idx - 1].priority) {
+        [array[idx], array[idx - 1]] = [array[idx - 1], array[idx]]
+        idx -= 1
       }
     },
   },
