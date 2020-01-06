@@ -44,6 +44,8 @@ const vue = new Vue({
         a.href = window.URL.createObjectURL(blob)
         a.dataset.downloadurl = [mime_type, a.download, a.href].join(":")
         a.click()
+        vue.n_papers_since_backup = 0
+        chrome.storage.local.set({n_papers_since_backup: 0})
       })
     },
     activate_slider: function (paper_data, idx) {
