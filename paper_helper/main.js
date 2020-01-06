@@ -21,14 +21,14 @@ const vue = new Vue({
       this.deleted_pd = this.paper_data.splice(idx, 1)[0]
       this.deleted_pd_idx = idx
       this.show_undelete_snackbar = true
-      this.save_data()
+      this.save_paper_data()
     },
     undelete_pd: function () {
       this.show_undelete_snackbar = false
       this.paper_data.splice(this.deleted_pd_idx, 0, this.deleted_pd)
-      this.save_data()
+      this.save_paper_data()
     },
-    save_data: function () {
+    save_paper_data: function () {
       chrome.storage.local.set({paper_data: this.paper_data})
     },
     download_data: function () {
@@ -47,6 +47,31 @@ const vue = new Vue({
         vue.n_papers_since_backup = 0
         chrome.storage.local.set({n_papers_since_backup: 0})
       })
+    },
+    load_file: function () {
+      const vue = this
+      const file_picker = document.createElement("input")
+      file_picker.type = "file"
+      file_picker.accept = "application/json"
+      file_picker.addEventListener("change", function(event) {
+        const input = event.target
+        if ("files" in input && input.files.length > 0) {
+          const reader = new FileReader()
+          reader.onload = event => vue.load_data(event.target.result)
+          reader.onerror = error => reject(error)
+          reader.readAsText(input.files[0])
+        }
+      })
+      file_picker.click()
+    },
+    load_data: function (data_string) {
+      const data = JSON.parse(data_string)
+      this.paper_data = this.paper_data.concat(data.paper_data || [])
+      chrome.storage.local.get(["tags"], function(result) {
+        const tags = (data.tags || []).concat(result.tags || [])
+        chrome.storage.local.set({tags})
+      })
+      this.save_paper_data()
     },
     activate_slider: function (paper_data, idx) {
       paper_data.show_slider = true
@@ -75,7 +100,7 @@ const vue = new Vue({
           document.onclick = null
           paper_data.show_slider = false
           vue.sort_nearly_sorted_array(vue.paper_data, idx)
-          vue.save_data()
+          vue.save_paper_data()
         }
         document.onclick = remove_handlers
         document.onmouseup = remove_handlers
