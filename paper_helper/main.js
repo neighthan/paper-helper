@@ -15,7 +15,7 @@ const vue = new Vue({
   },
   methods: {
     open_link: function (url) {
-      chrome.tabs.create({url})
+      window.open(url)
     },
     delete_pd: function (idx) {
       this.deleted_pd = this.paper_data.splice(idx, 1)[0]
@@ -28,25 +28,29 @@ const vue = new Vue({
       this.paper_data.splice(this.deleted_pd_idx, 0, this.deleted_pd)
       this.save_paper_data()
     },
+    edit_pd: function(idx) {
+      console.log(`Editing ${idx} (TODO)`)
+    },
     save_paper_data: function () {
-      chrome.storage.local.set({paper_data: this.paper_data})
+      console.log("Saving data... (TODO)")
+      // chrome.storage.local.set({paper_data: this.paper_data})
     },
     download_data: function () {
       const vue = this
-      chrome.storage.local.get(["tags"], function(result) {
-        const date = new Date().toLocaleDateString().replace(/\//g, "_")
-        const fname = `paper_data_backup__${date}.json`
-        const mime_type = "text/json"
-        const all_data = {paper_data: vue.paper_data, tags: result.tags}
-        const blob = new Blob([JSON.stringify(all_data)], {type: mime_type})
-        const a = document.createElement("a")
-        a.download = fname
-        a.href = window.URL.createObjectURL(blob)
-        a.dataset.downloadurl = [mime_type, a.download, a.href].join(":")
-        a.click()
-        vue.n_papers_since_backup = 0
-        chrome.storage.local.set({n_papers_since_backup: 0})
-      })
+      // chrome.storage.local.get(["tags"], function(result) {
+      //   const date = new Date().toLocaleDateString().replace(/\//g, "_")
+      //   const fname = `paper_data_backup__${date}.json`
+      //   const mime_type = "text/json"
+      //   const all_data = {paper_data: vue.paper_data, tags: result.tags}
+      //   const blob = new Blob([JSON.stringify(all_data)], {type: mime_type})
+      //   const a = document.createElement("a")
+      //   a.download = fname
+      //   a.href = window.URL.createObjectURL(blob)
+      //   a.dataset.downloadurl = [mime_type, a.download, a.href].join(":")
+      //   a.click()
+      //   vue.n_papers_since_backup = 0
+      //   // chrome.storage.local.set({n_papers_since_backup: 0})
+      // })
     },
     load_file: function () {
       const vue = this
@@ -67,10 +71,10 @@ const vue = new Vue({
     load_data: function (data_string) {
       const data = JSON.parse(data_string)
       this.paper_data = this.paper_data.concat(data.paper_data || [])
-      chrome.storage.local.get(["tags"], function(result) {
-        const tags = (data.tags || []).concat(result.tags || [])
-        chrome.storage.local.set({tags})
-      })
+      // chrome.storage.local.get(["tags"], function(result) {
+      //   const tags = (data.tags || []).concat(result.tags || [])
+      //   chrome.storage.local.set({tags})
+      // })
       this.save_paper_data()
     },
     activate_slider: function (paper_data, idx) {
@@ -149,20 +153,20 @@ const vue = new Vue({
   },
 })
 
-chrome.storage.local.get(["paper_data", "n_papers_since_backup"], function(result) {
-  const paper_data = result["paper_data"]
-  if (paper_data != null) {
-    // do this before assigning to vue so `show_slider` is reactive
-    paper_data.forEach(pd => pd.show_slider = false)
-    vue.paper_data = paper_data
-    // these don't need to be reactive; assign later just in case it speeds up rendering
-    paper_data.forEach(pd => pd.search_string = `${pd.title.toLowerCase()} ${pd.abstract.toLowerCase()}`)
-    paper_data.forEach(pd => pd.search_tags = new Set(pd.tags.map(tag => tag.toLowerCase())))
-    paper_data.forEach(pd => pd.date_string = new Date(pd.date || pd.time).toLocaleString("default", {month: "short", year: "numeric"}))
-  }
+// chrome.storage.local.get(["paper_data", "n_papers_since_backup"], function(result) {
+//   const paper_data = result["paper_data"]
+//   if (paper_data != null) {
+//     // do this before assigning to vue so `show_slider` is reactive
+//     paper_data.forEach(pd => pd.show_slider = false)
+//     vue.paper_data = paper_data
+//     // these don't need to be reactive; assign later just in case it speeds up rendering
+//     paper_data.forEach(pd => pd.search_string = `${pd.title.toLowerCase()} ${pd.abstract.toLowerCase()}`)
+//     paper_data.forEach(pd => pd.search_tags = new Set(pd.tags.map(tag => tag.toLowerCase())))
+//     paper_data.forEach(pd => pd.date_string = new Date(pd.date || pd.time).toLocaleString("default", {month: "short", year: "numeric"}))
+//   }
 
-  const n_papers_since_backup = result["n_papers_since_backup"]
-  if (n_papers_since_backup != null) {
-    vue.n_papers_since_backup = n_papers_since_backup
-  }
-})
+//   const n_papers_since_backup = result["n_papers_since_backup"]
+//   if (n_papers_since_backup != null) {
+//     vue.n_papers_since_backup = n_papers_since_backup
+//   }
+// })

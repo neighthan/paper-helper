@@ -109,6 +109,10 @@
                       <v-icon>delete</v-icon>
                     </v-btn>
 
+                    <v-btn icon @click.native.stop="edit_pd(idx)">
+                      <v-icon>edit</v-icon>
+                    </v-btn>
+
                     <v-chip
                       v-for="tag of pd.tags"
                       :key="pd.time + tag"
