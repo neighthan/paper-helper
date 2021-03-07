@@ -3,6 +3,7 @@ const vue = new Vue({
   vuetify: new Vuetify({icons: {iconfont: "md"}}),
   data: {
     paper_data: [],
+    all_tags: [],
     query: "",
     query_tags: "",
     min_priority: -100,
@@ -12,6 +13,15 @@ const vue = new Vue({
     show_undelete_snackbar: false,
     n_papers_since_backup: 0,
     n_papers_all_red: 10,
+
+    dialog: false,
+    title: "",
+    url: "",
+    tags: [],
+    priority: "0",
+    authors: "",
+    abstract: "",
+    metadata: {},
   },
   methods: {
     open_link: function (url) {
@@ -131,6 +141,46 @@ const vue = new Vue({
         [array[idx], array[idx - 1]] = [array[idx - 1], array[idx]]
         idx -= 1
       }
+    },
+    add_paper: function(save) {
+      this.dialog = false
+      if(save) {
+        const priority = parseFloat(this.priority)
+        const tags = this.tags.map(tag => tag.trim().toLowerCase())
+        let new_paper_data = {
+          ...this.metadata,
+          tags,
+          title: this.title,
+          url: this.url,
+          priority: priority,
+          authors: this.authors.split(", "),
+          abstract: this.abstract,
+        }
+        let inserted = false
+        for ([idx, data] of this.paper_data.entries()) {
+          if (data.priority < priority) {
+            this.paper_data.splice(idx, 0, new_paper_data)
+            inserted = true
+            break
+          }
+        }
+        if (!inserted) {
+          this.paper_data.push(new_paper_data)
+        }
+        this.all_tags = [...new Set(this.all_tags.concat(tags))]
+        // chrome.storage.local.set({paper_data: this.paper_data})
+        // chrome.storage.local.set({tags: this.all_tags})
+        // chrome.storage.local.get(["n_papers_since_backup"], function(result) {
+        //   const n_papers_since_backup = result["n_papers_since_backup"] || 0
+        //   chrome.storage.local.set({n_papers_since_backup: n_papers_since_backup + 1})
+        // })
+      }
+      this.title = ""
+      this.url = ""
+      this.tags = []
+      this.priority = "0"
+      this.authors = ""
+      this.abstract = ""
     },
   },
   computed: {
