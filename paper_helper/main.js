@@ -245,7 +245,7 @@ function loadFromDB(vue, db) {
       search_tags: new Set(p.tags.map(tag => tag.toLowerCase())),
       date_string: new Date(p.date || p.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
     })
-    vue.paper_data = papers
+    vue.paper_data = papers.sort((pd1, pd2) => pd2.priority - pd1.priority)
     vue.done_loading = true // assumes meta is already done loading
   })
 }
