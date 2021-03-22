@@ -57,7 +57,14 @@
               <v-text-field label="Title" v-model="title" dense autofocus></v-text-field>
               <v-combobox label="Tags" v-model="tags" :items="all_tags" multiple :delimiters="[' ']" dense small-chips>
               </v-combobox>
-              <v-text-field label="Priority" v-model="priority" dense></v-text-field>
+              <v-row>
+                <v-col>
+                  <v-text-field label="Priority" v-model="priority" dense></v-text-field>
+                </v-col>
+                <v-col>
+                  <v-text-field label="Date (YYYY/MM/DD)" v-model="date" dense></v-text-field>
+                </v-col>
+              </v-row>
               <v-textarea label="Abstract" v-model="abstract" rows=11 no-resize dense></v-textarea>
               <v-text-field label="Authors" v-model="authors" dense></v-text-field>
               <v-text-field label="URL" v-model="url" dense></v-text-field>
@@ -88,7 +95,7 @@
       <v-content>
         <v-container fluid>
           <v-expansion-panels accordion>
-            <v-expansion-panel v-for="(pd, idx) of filtered_paper_data" :key="pd.time">
+            <v-expansion-panel v-for="(pd, idx) of filtered_paper_data" :key="pd.id">
               <v-expansion-panel-header hide-actions>
                 <v-card class="mx-auto" flat>
                   <v-card-title>{{pd.title}}</v-card-title>
@@ -112,7 +119,7 @@
                     </v-tooltip>
                     <v-col v-else cols="8" sm="4" md="2">
                       <v-slider v-model="pd.priority" :min="min_priority" :max="max_priority" thumb-label="always"
-                        thumb-size="24" hide-details height="5" :ref="'slider' + pd.time"></v-slider>
+                        thumb-size="24" hide-details height="5" :ref="'slider' + pd.id"></v-slider>
                     </v-col>
 
                     <v-btn icon @click.native.stop="delete_pd(idx)">
@@ -123,7 +130,7 @@
                       <v-icon>edit</v-icon>
                     </v-btn>
 
-                    <v-chip v-for="tag of pd.tags" :key="pd.time + tag" label outlined>{{tag}}</v-chip>
+                    <v-chip v-for="tag of pd.tags" :key="pd.id + tag" label outlined>{{tag}}</v-chip>
 
                     <v-spacer></v-spacer>
                     {{pd.date_string}}
@@ -150,6 +157,7 @@
   </div>
 
   <script src="lib/vue.js"></script>
+  <!-- <script src="lib/vue.min.js"></script> -->
   <script src="lib/vuetify.js"></script>
   <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
   <script src="https://unpkg.com/dexie-export-import/dist/dexie-export-import.js"></script>

@@ -17,6 +17,9 @@ const vue = new Vue({
     n_papers_all_red: 10,
     next_paper_id: 0,
 
+    updating: false, // updating existing paper instead of adding new one
+    id: -1, // id of paper being updated
+    timeAdded: -1,
     dialog: false,
     title: "",
     url: "",
@@ -24,7 +27,7 @@ const vue = new Vue({
     priority: "0",
     authors: "",
     abstract: "",
-    metadata: {},
+    date: "",
   },
   methods: {
     open_link: function (url) {
@@ -42,12 +45,22 @@ const vue = new Vue({
       db.papers.add(this.deleted_pd)
     },
     edit_pd: function(idx) {
-      console.log(`Editing ${idx} (TODO)`)
+      const pd = this.paper_data[idx]
+      this.updating = true
+      this.priority = pd.priority.toString()
+      this.tags = pd.tags
+      this.title = pd.title
+      this.url = pd.url
+      this.abstract = pd.abstract
+      this.authors = pd.authors.join(", ")
+      this.id = pd.id
+      this.timeAdded = pd.time_added
+      this.date = pd.date
+      this.dialog = true
     },
     download_data: async function () {
       try {
         const jsonBlob = await db.export({prettyJson: true})
-        console.log(jsonBlob)
         const date = new Date().toLocaleDateString().replace(/\//g, "_")
         const mime_type = "text/json"
         const a = document.createElement("a")
@@ -56,7 +69,9 @@ const vue = new Vue({
         a.dataset.downloadurl = [mime_type, a.download, a.href].join(":")
         a.click()
 
-        this.n_papers_since_backup = n_papers_all_red
+        // TODO: these two lines should only run if you actually download the file
+        // (not if you cancel saving it)
+        this.n_papers_since_backup = 0
         db.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
       } catch (error) {
         console.error(error)
@@ -78,6 +93,8 @@ const vue = new Vue({
     load_data: async function (jsonFile) {
       await Dexie.import(jsonFile, {overwriteValues: true})
       loadFromDB(this, db)
+      this.n_papers_since_backup = this.n_papers_all_red
+      db.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
     },
     activate_slider: function (paper_data, idx) {
       paper_data.show_slider = true
@@ -98,7 +115,7 @@ const vue = new Vue({
       const vue = this
       // the ref for the slider won't exist until the next tick
       Vue.nextTick().then(function () {
-        const rect = vue.$refs[`slider${paper_data.time}`][0].$el.getBoundingClientRect()
+        const rect = vue.$refs[`slider${paper_data.id}`][0].$el.getBoundingClientRect()
 
         const remove_handlers = function (event) {
           document.onmousemove = null
@@ -106,7 +123,6 @@ const vue = new Vue({
           document.onclick = null
           paper_data.show_slider = false
           vue.sort_nearly_sorted_array(vue.paper_data, idx)
-          vue.save_paper_data()
         }
         document.onclick = remove_handlers
         document.onmouseup = remove_handlers
@@ -139,35 +155,34 @@ const vue = new Vue({
     add_paper: function(save) {
       this.dialog = false
       if(save) {
-        const priority = parseFloat(this.priority)
-        const tags = this.tags.map(tag => tag.trim().toLowerCase())
-        let new_paper_data = {
-          ...this.metadata,
-          tags,
+        let paper = {
+          tags: this.tags.map(tag => tag.trim()),
           title: this.title,
           url: this.url,
-          priority: priority,
+          priority: parseFloat(this.priority),
           authors: this.authors.split(", "),
           abstract: this.abstract,
-          id: this.next_paper_id,
+          id: this.updating? this.id : this.next_paper_id,
+          time_added: this.updating? this.timeAdded : Date.now(),
+          date: this.date,
         }
-        let inserted = false
-        for ([idx, data] of this.paper_data.entries()) {
-          if (data.priority < priority) {
-            this.paper_data.splice(idx, 0, new_paper_data)
-            inserted = true
-            break
-          }
+        if (!this.updating) {
+          this.next_paper_id += 1
         }
-        if (!inserted) {
-          this.paper_data.push(new_paper_data)
+        db.papers.put(paper)
+        this.paper_temp_data[paper.id] = {
+          show_slider: false,
+          search_string: `${paper.title.toLowerCase()} ${paper.abstract.toLowerCase()}`,
+          search_tags: new Set(paper.tags.map(tag => tag.toLowerCase())),
+          date_string: new Date(paper.date || paper.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
         }
-        this.all_tags = [...new Set(this.all_tags.concat(tags))]
-        db.papers.add(new_paper_data)
+        db.papers.toArray().then((papers) => {
+          this.paper_data = papers
+        })
+
+        this.all_tags = [...new Set(this.all_tags.concat(paper.tags))]
         this.n_papers_since_backup += 1
-        this.next_paper_id += 1
         db.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
-        this.paper_temp_data[new_paper_data.id] = {"show_slider": false}
       }
       this.title = ""
       this.url = ""
@@ -175,6 +190,8 @@ const vue = new Vue({
       this.priority = "0"
       this.authors = ""
       this.abstract = ""
+      this.date = ""
+      this.updating = false
     },
   },
   computed: {
@@ -226,7 +243,7 @@ function loadFromDB(vue, db) {
       show_slider: false,
       search_string: `${p.title.toLowerCase()} ${p.abstract.toLowerCase()}`,
       search_tags: new Set(p.tags.map(tag => tag.toLowerCase())),
-      date_string: new Date(p.date || p.time).toLocaleString("default", {month: "short", year: "numeric"}),
+      date_string: new Date(p.date || p.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
     })
     vue.paper_data = papers
     vue.done_loading = true // assumes meta is already done loading
