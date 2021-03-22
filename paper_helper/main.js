@@ -199,11 +199,11 @@ const vue = new Vue({
       let data = this.paper_data // direct reference; don't mutate!
       if (this.query_tags != "") {
         const query_tags = this.query_tags.toLowerCase().split(", ")
-        data = data.filter(pd => query_tags.every(tag => pd.search_tags.has(tag)))
+        data = data.filter(pd => query_tags.every(tag => this.paper_temp_data[pd.id].search_tags.has(tag)))
       }
       if (this.query != "") {
         const query = this.query.toLowerCase()
-        data = data.filter(pd => pd.search_string.includes(query))
+        data = data.filter(pd => this.paper_temp_data[pd.id].search_string.includes(query))
       }
       return data
     },
