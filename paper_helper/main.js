@@ -198,7 +198,7 @@ const vue = new Vue({
     filtered_paper_data: function () {
       let data = this.paper_data // direct reference; don't mutate!
       if (this.query_tags != "") {
-        const query_tags = this.query_tags.toLowerCase().split(", ")
+        const query_tags = this.query_tags.toLowerCase().split(" ")
         data = data.filter(pd => query_tags.every(tag => this.paper_temp_data[pd.id].search_tags.has(tag)))
       }
       if (this.query != "") {
@@ -239,11 +239,19 @@ function loadFromDB(vue, db) {
     }
   })
   db.papers.toArray().then((papers) => {
-    papers.forEach(p => vue.paper_temp_data[p.id] = {
-      show_slider: false,
-      search_string: `${p.title.toLowerCase()} ${p.abstract.toLowerCase()}`,
-      search_tags: new Set(p.tags.map(tag => tag.toLowerCase())),
-      date_string: new Date(p.date || p.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
+    papers.forEach(p => {
+      const search_tags = new Set([""])
+      for (let tag of p.tags.map(tag => tag.toLowerCase())) {
+        for (let i = 1; i <= tag.length; i++) {
+          search_tags.add(tag.slice(0, i))
+        }
+      }
+      vue.paper_temp_data[p.id] = {
+        show_slider: false,
+        search_string: `${p.title.toLowerCase()} ${p.abstract.toLowerCase()}`,
+        search_tags: search_tags,
+        date_string: new Date(p.date || p.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
+      }
     })
     vue.paper_data = papers.sort((pd1, pd2) => pd2.priority - pd1.priority)
     vue.done_loading = true // assumes meta is already done loading
