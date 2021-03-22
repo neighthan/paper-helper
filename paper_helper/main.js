@@ -173,7 +173,7 @@ const vue = new Vue({
         this.paper_temp_data[paper.id] = {
           show_slider: false,
           search_string: `${paper.title.toLowerCase()} ${paper.abstract.toLowerCase()}`,
-          search_tags: new Set(paper.tags.map(tag => tag.toLowerCase())),
+          search_tags: getPrefixSet(paper.tags),
           date_string: new Date(paper.date || paper.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
         }
         db.papers.toArray().then((papers) => {
@@ -221,6 +221,16 @@ db.version(1).stores({
   meta: "id", // n_papers_since_backup, next_paper_id, tags
 })
 
+function getPrefixSet(tags) {
+  const prefixes = new Set([""])
+  for (let tag of tags.map(tag => tag.toLowerCase())) {
+    for (let i = 1; i <= tag.length; i++) {
+      prefixes.add(tag.slice(0, i))
+    }
+  }
+  return prefixes
+}
+
 function loadFromDB(vue, db) {
   vue.done_loading = false
   db.meta.toArray().then((meta) => {
@@ -240,16 +250,10 @@ function loadFromDB(vue, db) {
   })
   db.papers.toArray().then((papers) => {
     papers.forEach(p => {
-      const search_tags = new Set([""])
-      for (let tag of p.tags.map(tag => tag.toLowerCase())) {
-        for (let i = 1; i <= tag.length; i++) {
-          search_tags.add(tag.slice(0, i))
-        }
-      }
       vue.paper_temp_data[p.id] = {
         show_slider: false,
         search_string: `${p.title.toLowerCase()} ${p.abstract.toLowerCase()}`,
-        search_tags: search_tags,
+        search_tags: getPrefixSet(p.tags),
         date_string: new Date(p.date || p.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
       }
     })
