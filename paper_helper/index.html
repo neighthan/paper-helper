@@ -102,7 +102,7 @@
                       <span>{{pd.url}}</span>
                     </v-tooltip>
 
-                    <v-tooltip top v-if="!pd.show_slider">
+                    <v-tooltip top v-if="!paper_temp_data[pd.id].show_slider">
                       <template v-slot:activator="{on}">
                         <v-btn icon v-on="on" @mousedown.native.stop="activate_slider(pd, idx)">
                           <v-icon>swap_vert</v-icon>
@@ -151,6 +151,8 @@
 
   <script src="lib/vue.js"></script>
   <script src="lib/vuetify.js"></script>
+  <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+  <script src="https://unpkg.com/dexie-export-import/dist/dexie-export-import.js"></script>
   <script src="main.js"></script>
 </body>
 
