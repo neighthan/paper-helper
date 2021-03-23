@@ -23,12 +23,15 @@ self.addEventListener("fetch", fetchEvent => {
   )
 })
 
-self.addEventListener("activate", event => {
-  event.waitUntil((async () => {
-    const cacheKeys = await caches.keys()
-    await Promise.all(cacheKeys.map((key) => {
-      if (key === cacheName) { return }
-      await caches.delete(key)
-    }))
-  })())
+self.addEventListener("activate", (activateEvent) => {
+  activateEvent.waitUntil(
+    caches.keys().then((cacheKeys) => {
+      return Promise.all(cacheKeys.map((key) => {
+        if (key !== cacheName) {
+          console.log("deleting cache", key)
+          return caches.delete(key)
+        }
+      }))
+    })
+  )
 })
