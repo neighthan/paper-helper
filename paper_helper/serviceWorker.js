@@ -1,4 +1,4 @@
-const cacheName = "paper-helper"
+const cacheName = "paper-helper-v1"
 const assets = [
   "/",
   "/index.html",
