@@ -3,6 +3,8 @@ const assets = [
   "/",
   "/index.html",
   "/main.js",
+  "/img/icons/192x192.png",
+  "/img/icons/512x512.png",
 ]
 
 self.addEventListener("install", installEvent => {
