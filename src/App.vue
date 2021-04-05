@@ -1,10 +1,13 @@
 <template>
   <div id="app">
-    <div id="nav">
+    <v-app>
+      <!-- <v-navigation-drawer app> -->
+      <!-- </v-navigation-drawer> -->
       <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
-    <router-view />
+      <router-view />
+      <v-footer app>
+      </v-footer>
+    </v-app>
   </div>
 </template>
 
