@@ -345,4 +345,9 @@ function loadFromDB(vue: Home, db: PapersDb) {
 .v-chip {
   margin-right: 4px;
 }
+
+.v-tooltip__content {
+  font-size: 14px;
+  padding: 3px 5px;
+}
 </style>
