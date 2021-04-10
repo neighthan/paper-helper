@@ -57,7 +57,7 @@
 
                     <v-tooltip top v-if="!paper_temp_data[pd.id].show_slider">
                       <template v-slot:activator="{on}">
-                        <v-btn icon v-on="on" @mousedown.native.stop="activate_slider(pd, idx)">
+                        <v-btn icon v-on="on" @mousedown.native.stop="editPriority(pd)">
                           <v-icon>swap_vert</v-icon>
                         </v-btn>
                       </template>
@@ -191,25 +191,8 @@ export default class Home extends Vue {
     this.n_papers_since_backup = this.n_papers_all_red
     db.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
   }
-  // TODO: I removed activate_slider here
-
-  // TODO: try using a normal sort instead of this and see if it really makes a
-  // noticeable difference. Get rid of this function if normal sort is fast enough
-  sort_nearly_sorted_array(array: any[], idx: number) {
-    // WARNING - this operation is in-place!
-    // array must be an array of objects sorted in descening order by a property
-    // called priority except that the object array[idx] may be out of order.
-    // swap the out-of-order item left or right until it's in order
-
-    const obj = array[idx]
-    while (idx < array.length - 1 && obj.priority <= array[idx + 1].priority) {
-      [array[idx], array[idx + 1]] = [array[idx + 1], array[idx]]
-      idx += 1
-    }
-    while (idx > 0 && obj.priority > array[idx - 1].priority) {
-      [array[idx], array[idx - 1]] = [array[idx - 1], array[idx]]
-      idx -= 1
-    }
+  editPriority(paper: PaperData) {
+    console.log("TODO: edit priority for", paper)
   }
   add_paper(save: boolean, paper: PaperData) {
     this.dialog = false
