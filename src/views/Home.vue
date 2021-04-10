@@ -19,12 +19,23 @@
           <PaperDialog :initialData="editingPaper" :all_tags="all_tags" @addPaper="add_paper"/>
         </v-dialog>
 
-        <v-btn icon @click="download_data">
-          <v-icon :color="download_red">save_alt</v-icon>
-        </v-btn>
-        <v-btn icon @click="load_file">
-          <v-icon>arrow_upward</v-icon>
-        </v-btn>
+        <v-tooltip open-delay="1000">
+          <template v-slot:activator="{on}">
+            <v-btn icon v-on="on" @click="download_data">
+              <v-icon :color="download_red">save_alt</v-icon>
+            </v-btn>
+          </template>
+          <span>Download</span>
+        </v-tooltip>
+
+        <v-tooltip open-delay="1000">
+          <template v-slot:activator="{on}">
+            <v-btn icon v-on="on" @click="load_file">
+              <v-icon>arrow_upward</v-icon>
+            </v-btn>
+          </template>
+          <span>Upload</span>
+        </v-tooltip>
       </v-app-bar>
 
       <v-main>
@@ -217,7 +228,7 @@ export default class Home extends Vue {
         date_string: new Date(paper.date || paper.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
       }
       db.papers.toArray().then((papers) => {
-        this.paper_data = papers
+        this.paper_data = papers.sort((pd1, pd2) => pd2.priority - pd1.priority)
       })
 
       this.all_tags = [...new Set(this.all_tags.concat(paper.tags))]
