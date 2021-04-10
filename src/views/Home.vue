@@ -16,36 +16,7 @@
               <v-icon>add</v-icon>
             </v-btn>
           </template>
-          <v-card>
-            <v-card-text>
-              <v-text-field label="Title" v-model="title" dense autofocus></v-text-field>
-              <v-combobox label="Tags" v-model="tags" :items="all_tags" multiple :delimiters="[' ']" dense small-chips>
-              </v-combobox>
-              <v-row>
-                <v-col>
-                  <v-text-field label="Priority" v-model="priority" dense></v-text-field>
-                </v-col>
-                <v-col>
-                  <v-text-field label="Date (YYYY/MM/DD)" v-model="date" dense></v-text-field>
-                </v-col>
-              </v-row>
-              <v-textarea label="Abstract" v-model="abstract" rows=11 no-resize dense></v-textarea>
-              <v-text-field label="Authors" v-model="authors" dense></v-text-field>
-              <v-text-field label="URL" v-model="url" dense></v-text-field>
-            </v-card-text>
-
-            <v-divider></v-divider>
-
-            <v-card-actions>
-              <v-btn color="primary" text @click="add_paper(true)">
-                Save
-              </v-btn>
-              <v-btn color="error" text @click="add_paper(false)">
-                Cancel
-              </v-btn>
-              <v-spacer></v-spacer>
-            </v-card-actions>
-          </v-card>
+          <PaperDialog :initialData="editingPaper" :all_tags="all_tags" @addPaper="add_paper"/>
         </v-dialog>
 
         <v-btn icon @click="download_data">
@@ -119,33 +90,12 @@
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
-import HelloWorld from "@/components/HelloWorld.vue"; // @ is an alias to /src
+import PaperDialog from "@/components/PaperDialog.vue"
 import Dexie from "dexie"
 import {exportDB, importInto} from "dexie-export-import"
+import { PaperData, PaperTempData } from "@/paper_types"
 
-
-type PaperData = {
-  id: number,
-  title: string,
-  abstract: string,
-  tags: string[],
-  date: string,
-  time_added: number,
-  priority: number,
-  url: string,
-  authors: string[],
-}
-type PaperTempDatum = {
-  show_slider: boolean,
-  search_string: string,
-  search_tags: Set<string>,
-  date_string: string,
-}
-type PaperTempData = {
-  [key: number]: PaperTempDatum
-}
-
-@Component
+@Component({components: {PaperDialog}})
 export default class Home extends Vue {
   done_loading = false
   paper_data: PaperData[] = []
@@ -161,18 +111,9 @@ export default class Home extends Vue {
   n_papers_since_backup = 0
   n_papers_all_red = 10
   next_paper_id = 0
-
-  updating = false // updating existing paper instead of adding new one
-  id = -1 // id of paper being updated
-  timeAdded = -1
+  updating = false
   dialog = false
-  title = ""
-  url = ""
-  tags: string[] = []
-  priority = "0"
-  authors = ""
-  abstract = ""
-  date = ""
+  editingPaper: PaperData | null = null
 
   created() {
     loadFromDB(this, db)
@@ -194,17 +135,8 @@ export default class Home extends Vue {
     }
   }
   edit_pd(idx: number) {
-    const pd = this.paper_data[idx]
+    this.editingPaper = this.paper_data[idx]
     this.updating = true
-    this.priority = pd.priority.toString()
-    this.tags = pd.tags
-    this.title = pd.title
-    this.url = pd.url
-    this.abstract = pd.abstract
-    this.authors = pd.authors.join(", ")
-    this.id = pd.id
-    this.timeAdded = pd.time_added
-    this.date = pd.date
     this.dialog = true
   }
   async download_data() {
@@ -268,21 +200,13 @@ export default class Home extends Vue {
       idx -= 1
     }
   }
-  add_paper(save: boolean) {
+  add_paper(save: boolean, paper: PaperData) {
     this.dialog = false
+    this.editingPaper = null
     if(save) {
-      let paper = {
-        tags: this.tags.map(tag => tag.trim()),
-        title: this.title,
-        url: this.url,
-        priority: parseFloat(this.priority),
-        authors: this.authors.split(", "),
-        abstract: this.abstract,
-        id: this.updating? this.id : this.next_paper_id,
-        time_added: this.updating? this.timeAdded : Date.now(),
-        date: this.date,
-      }
       if (!this.updating) {
+        paper["time_added"] = Date.now()
+        paper["id"] = this.next_paper_id
         this.next_paper_id += 1
       }
       db.papers.put(paper)
@@ -300,13 +224,6 @@ export default class Home extends Vue {
       this.n_papers_since_backup += 1
       db.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
     }
-    this.title = ""
-    this.url = ""
-    this.tags = []
-    this.priority = "0"
-    this.authors = ""
-    this.abstract = ""
-    this.date = ""
     this.updating = false
   }
   // computed
