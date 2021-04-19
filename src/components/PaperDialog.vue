@@ -51,18 +51,28 @@ export default class PaperDialog extends Vue {
   abstract = ""
   date = ""
 
+  created() {
+    if (this.initialData) {
+      this.updateFields(this.initialData)
+    }
+  }
+
+  updateFields(paper: PaperData) {
+    this.id = paper.id
+    this.priority = paper.priority.toString()
+    this.tags = paper.tags // TODO: need to copy?
+    this.title = paper.title
+    this.url = paper.url
+    this.abstract = paper.abstract
+    this.authors = paper.authors.join(", ")
+    this.timeAdded = paper.time_added
+    this.date = paper.date
+  }
+
   @Watch("initialData")
   onPaperChanged(newPaper: PaperData, oldPaper: PaperData) {
     if (newPaper) {
-      this.id = newPaper.id
-      this.priority = newPaper.priority.toString()
-      this.tags = newPaper.tags // TODO: need to copy?
-      this.title = newPaper.title
-      this.url = newPaper.url
-      this.abstract = newPaper.abstract
-      this.authors = newPaper.authors.join(", ")
-      this.timeAdded = newPaper.time_added
-      this.date = newPaper.date
+      this.updateFields(newPaper)
     } else {
       this.id = -1 // id of paper being updated
       this.timeAdded = -1
