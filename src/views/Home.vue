@@ -127,7 +127,7 @@ export default class Home extends Vue {
   editingPaper: PaperData | null = null
 
   created() {
-    loadFromDB(this, db)
+    loadFromDB(this, DB)
   }
   open_link(url: string) {
     window.open(url)
@@ -136,13 +136,13 @@ export default class Home extends Vue {
     this.deleted_pd = this.paper_data.splice(idx, 1)[0]
     this.deleted_pd_idx = idx
     this.show_undelete_snackbar = true
-    db.papers.delete(this.deleted_pd.id)
+    DB.papers.delete(this.deleted_pd.id)
   }
   undelete_pd() {
     this.show_undelete_snackbar = false
     if (this.deleted_pd !== null) {
       this.paper_data.splice(this.deleted_pd_idx, 0, this.deleted_pd)
-      db.papers.add(this.deleted_pd)
+      DB.papers.add(this.deleted_pd)
     }
   }
   edit_pd(idx: number) {
@@ -152,8 +152,7 @@ export default class Home extends Vue {
   }
   async download_data() {
     try {
-      // const jsonBlob = await db.export({prettyJson: true})
-      const jsonBlob = exportDB(db, {prettyJson: true})
+      const jsonBlob = await exportDB(DB, {prettyJson: true})
       const date = new Date().toLocaleDateString().replace(/\//g, "_")
       const mime_type = "text/json"
       const a = document.createElement("a")
@@ -165,7 +164,7 @@ export default class Home extends Vue {
       // TODO: these two lines should only run if you actually download the file
       // (not if you cancel saving it)
       this.n_papers_since_backup = 0
-      db.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
+      DB.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
     } catch (error) {
       console.error(error)
     }
@@ -185,11 +184,10 @@ export default class Home extends Vue {
     file_picker.click()
   }
   async load_data(jsonFile: File) {
-    // await Dexie.import(jsonFile, {overwriteValues: true})
-    importInto(db, jsonFile, {overwriteValues: true})
-    loadFromDB(this, db)
+    importInto(DB, jsonFile, {overwriteValues: true})
+    loadFromDB(this, DB)
     this.n_papers_since_backup = this.n_papers_all_red
-    db.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
+    DB.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
   }
   editPriority(paper: PaperData) {
     console.log("TODO: edit priority for", paper)
@@ -203,20 +201,20 @@ export default class Home extends Vue {
         paper["id"] = this.next_paper_id
         this.next_paper_id += 1
       }
-      db.papers.put(paper)
+      DB.papers.put(paper)
       this.paper_temp_data[paper.id] = {
         show_slider: false,
         search_string: `${paper.title.toLowerCase()} ${paper.abstract.toLowerCase()}`,
         search_tags: getPrefixSet(paper.tags),
         date_string: new Date(paper.date || paper.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
       }
-      db.papers.toArray().then((papers) => {
+      DB.papers.toArray().then((papers) => {
         this.paper_data = papers.sort((pd1, pd2) => pd2.priority - pd1.priority)
       })
 
       this.all_tags = [...new Set(this.all_tags.concat(paper.tags))]
       this.n_papers_since_backup += 1
-      db.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
+      DB.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
     }
     this.updating = false
   }
@@ -260,10 +258,11 @@ class PapersDb extends Dexie {
         })
         this.papers = this.table('papers')
         this.meta = this.table('meta')
+        this.meta.mapToClass(Meta)
     }
 }
 
-const db = new PapersDb("paper-helper")
+const DB = new PapersDb("paper-helper")
 
 function getPrefixSet(tags: string[]) {
   const prefixes = new Set([""])
@@ -305,7 +304,6 @@ function loadFromDB(vue: Home, db: PapersDb) {
     vue.done_loading = true // assumes meta is already done loading
   })
 }
-
 </script>
 
 <style scoped lang="scss">
