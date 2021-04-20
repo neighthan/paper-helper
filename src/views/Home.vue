@@ -21,6 +21,15 @@
 
         <v-tooltip open-delay="1000">
           <template v-slot:activator="{on}">
+            <v-btn icon v-on="on" @click="sync_dropbox">
+              <v-icon>refresh</v-icon>
+            </v-btn>
+          </template>
+          <span>Sync to Dropbox</span>
+        </v-tooltip>
+
+        <v-tooltip open-delay="1000">
+          <template v-slot:activator="{on}">
             <v-btn icon v-on="on" @click="download_data">
               <v-icon :color="download_red">save_alt</v-icon>
             </v-btn>
@@ -105,6 +114,8 @@ import PaperDialog from "@/components/PaperDialog.vue"
 import Dexie from "dexie"
 import {exportDB, importInto} from "dexie-export-import"
 import { PaperData, PaperTempData } from "@/paper_types"
+import { Dropbox } from 'dropbox'
+
 
 @Component({components: {PaperDialog}})
 export default class Home extends Vue {
@@ -122,7 +133,7 @@ export default class Home extends Vue {
   updating = false
   dialog = false
   editingPaper: PaperData | null = null
-  meta: Meta = new Meta(0, 0, 0, [])
+  meta: Meta = new Meta(0, 0, 0, [], "")
 
   created() {
     loadFromDB(this, DB)
@@ -213,6 +224,28 @@ export default class Home extends Vue {
     }
     this.updating = false
   }
+  async sync_dropbox() {
+    if (!this.meta.dropboxToken) {
+      // TODO: make this nicer
+      let token =  prompt("Enter your dropbox token")
+      if (!token) {
+        return
+      }
+      this.meta.dropboxToken = token
+    }
+    const dbx = new Dropbox({accessToken: this.meta.dropboxToken})
+
+    const jsonBlob = await exportDB(DB, {prettyJson: true})
+    const jsonStr = await jsonBlob.text()
+    dbx.filesUpload({
+      path: "/paper-helper-db.json",
+      contents: new File([jsonStr], "db.json", {type: "application/json"})
+    }).then((response) => {
+      console.log(response)
+    }).catch((error) => {
+      console.error(error)
+    })
+  }
   // computed
   get filtered_paper_data() {
     let data = this.paper_data // direct reference; don't mutate!
@@ -238,16 +271,19 @@ class Meta {
     _n_papers_since_backup: number
     _next_paper_id: number
     _tags: string[]
+    _dropboxToken: string
     constructor(
       id: number,
       n_papers_since_backup: number,
       next_paper_id: number,
       tags: string[],
+      dropboxToken: string,
     ) {
       this.id = id
       this._n_papers_since_backup = n_papers_since_backup
       this._next_paper_id = next_paper_id
       this._tags = tags
+      this._dropboxToken = dropboxToken
     }
 
     // dexie didn't like using a getter for id, but we don't want a setter anyway, so
@@ -261,16 +297,23 @@ class Meta {
     get tags() {
       return this._tags
     }
-    set n_papers_since_backup(n_papers_since_backup: number) {
+    get dropboxToken() {
+      return this._dropboxToken
+    }
+    set n_papers_since_backup(n_papers_since_backup) {
       this._n_papers_since_backup = n_papers_since_backup
       this._updateDb()
     }
-    set next_paper_id(next_paper_id: number) {
+    set next_paper_id(next_paper_id) {
       this._next_paper_id = next_paper_id
       this._updateDb()
     }
-    set tags(tags: string[]) {
+    set tags(tags) {
       this._tags = tags
+      this._updateDb()
+    }
+    set dropboxToken(dropboxToken) {
+      this._dropboxToken = dropboxToken
       this._updateDb()
     }
     _updateDb() {
@@ -312,7 +355,7 @@ function loadFromDB(vue: Home, db: PapersDb) {
   vue.done_loading = false
   db.meta.toArray().then((meta) => {
     if (!meta.length) {
-      vue.meta = new Meta(0, 0, 0, [])
+      vue.meta = new Meta(0, 0, 0, [], "")
       db.meta.add(vue.meta)
     } else {
       if (meta.length > 1) {
