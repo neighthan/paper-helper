@@ -239,7 +239,8 @@ export default class Home extends Vue {
     const jsonStr = await jsonBlob.text()
     dbx.filesUpload({
       path: "/paper-helper-db.json",
-      contents: new File([jsonStr], "db.json", {type: "application/json"})
+      contents: new File([jsonStr], "db.json", {type: "application/json"}),
+      mode: {".tag": "overwrite"},
     }).then((response) => {
       console.log(response)
     }).catch((error) => {
