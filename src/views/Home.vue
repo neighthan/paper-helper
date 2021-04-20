@@ -16,7 +16,7 @@
               <v-icon>add</v-icon>
             </v-btn>
           </template>
-          <PaperDialog :initialData="editingPaper" :all_tags="all_tags" @addPaper="add_paper"/>
+          <PaperDialog :initialData="editingPaper" :all_tags="meta.tags" @addPaper="add_paper"/>
         </v-dialog>
 
         <v-tooltip open-delay="1000">
@@ -111,7 +111,6 @@ export default class Home extends Vue {
   done_loading = false
   paper_data: PaperData[] = []
   paper_temp_data: PaperTempData = {}
-  all_tags: string[] = []
   query = ""
   query_tags = ""
   min_priority = -100
@@ -119,12 +118,11 @@ export default class Home extends Vue {
   deleted_pd: PaperData | null = null
   deleted_pd_idx = -1
   show_undelete_snackbar = false
-  n_papers_since_backup = 0
   n_papers_all_red = 10
-  next_paper_id = 0
   updating = false
   dialog = false
   editingPaper: PaperData | null = null
+  meta: Meta = new Meta(0, 0, 0, [])
 
   created() {
     loadFromDB(this, DB)
@@ -161,10 +159,9 @@ export default class Home extends Vue {
       a.dataset.downloadurl = [mime_type, a.download, a.href].join(":")
       a.click()
 
-      // TODO: these two lines should only run if you actually download the file
+      // TODO: this line should only run if you actually download the file
       // (not if you cancel saving it)
-      this.n_papers_since_backup = 0
-      DB.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
+      this.meta!.n_papers_since_backup = 0
     } catch (error) {
       console.error(error)
     }
@@ -186,8 +183,7 @@ export default class Home extends Vue {
   async load_data(jsonFile: File) {
     importInto(DB, jsonFile, {overwriteValues: true})
     loadFromDB(this, DB)
-    this.n_papers_since_backup = this.n_papers_all_red
-    DB.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
+    this.meta!.n_papers_since_backup = this.n_papers_all_red
   }
   editPriority(paper: PaperData) {
     console.log("TODO: edit priority for", paper)
@@ -198,8 +194,8 @@ export default class Home extends Vue {
     if(save) {
       if (!this.updating) {
         paper["time_added"] = Date.now()
-        paper["id"] = this.next_paper_id
-        this.next_paper_id += 1
+        paper["id"] = this.meta!.next_paper_id
+        this.meta!.next_paper_id += 1
       }
       DB.papers.put(paper)
       this.paper_temp_data[paper.id] = {
@@ -212,9 +208,8 @@ export default class Home extends Vue {
         this.paper_data = papers.sort((pd1, pd2) => pd2.priority - pd1.priority)
       })
 
-      this.all_tags = [...new Set(this.all_tags.concat(paper.tags))]
-      this.n_papers_since_backup += 1
-      DB.meta.update(0, {n_papers_since_backup: this.n_papers_since_backup, next_paper_id: this.next_paper_id, tags: this.all_tags})
+      this.meta!.tags = [...new Set(this.meta!.tags.concat(paper.tags))]
+      this.meta!.n_papers_since_backup += 1
     }
     this.updating = false
   }
@@ -232,17 +227,56 @@ export default class Home extends Vue {
     return data
   }
   get download_red() {
-    const red = Math.round(255 * Math.min(this.n_papers_since_backup / this.n_papers_all_red, 1))
+    const red = Math.round(255 * Math.min(this.meta!.n_papers_since_backup / this.n_papers_all_red, 1))
     return `rgba(${red}, 0, 0, 1)`
   }
 }
 
 // TODO: pull db things into a separate .ts file then just do `import db from "db.ts"`
-type Meta = {
-    id: number,
-    n_papers_since_backup: number,
-    next_paper_id: number,
-    tags: string[],
+class Meta {
+    id: number
+    _n_papers_since_backup: number
+    _next_paper_id: number
+    _tags: string[]
+    constructor(
+      id: number,
+      n_papers_since_backup: number,
+      next_paper_id: number,
+      tags: string[],
+    ) {
+      this.id = id
+      this._n_papers_since_backup = n_papers_since_backup
+      this._next_paper_id = next_paper_id
+      this._tags = tags
+    }
+
+    // dexie didn't like using a getter for id, but we don't want a setter anyway, so
+    // it's not a problem (just can't make it readonly)
+    get n_papers_since_backup() {
+      return this._n_papers_since_backup
+    }
+    get next_paper_id() {
+      return this._next_paper_id
+    }
+    get tags() {
+      return this._tags
+    }
+    set n_papers_since_backup(n_papers_since_backup: number) {
+      this._n_papers_since_backup = n_papers_since_backup
+      this._updateDb()
+    }
+    set next_paper_id(next_paper_id: number) {
+      this._next_paper_id = next_paper_id
+      this._updateDb()
+    }
+    set tags(tags: string[]) {
+      this._tags = tags
+      this._updateDb()
+    }
+    _updateDb() {
+      // DB.meta.update(this._id, {n_papers_since_backup: this._n_papers_since_backup, next_paper_id: this._next_paper_id, tags: this._tags})
+      DB.meta.update(this.id, this)
+    }
 }
 
 class PapersDb extends Dexie {
@@ -278,17 +312,14 @@ function loadFromDB(vue: Home, db: PapersDb) {
   vue.done_loading = false
   db.meta.toArray().then((meta) => {
     if (!meta.length) {
-      vue.n_papers_since_backup = 0
-      db.meta.add({id: 0, n_papers_since_backup: 0, next_paper_id: 0, tags: []})
+      vue.meta = new Meta(0, 0, 0, [])
+      db.meta.add(vue.meta)
     } else {
       if (meta.length > 1) {
         console.log("Warning: found multiple meta entries.")
         console.log(meta)
       }
-      let meta0 = meta[0]
-      vue.n_papers_since_backup = meta0["n_papers_since_backup"]
-      vue.next_paper_id = meta0["next_paper_id"]
-      vue.all_tags = meta0["tags"]
+      vue.meta = meta[0]
     }
   })
   db.papers.toArray().then((papers) => {
