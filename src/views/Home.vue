@@ -1,6 +1,7 @@
 <template>
   <div class="home">
       <v-app-bar app>
+        <NavIcon/>
         <v-col cols="12" sm="6" md="3">
           <v-text-field v-model="query" append-icon="search" hide-details></v-text-field>
         </v-col>
@@ -67,13 +68,14 @@
 import { Component, Vue } from "vue-property-decorator";
 import PaperDialog from "@/components/PaperDialog.vue"
 import ExpansionItem from "@/components/ExpansionItem.vue"
+import NavIcon from "@/components/NavIcon.vue"
 import Dexie from "dexie"
 import {exportDB, importInto} from "dexie-export-import"
 import { PaperData, PaperTempData } from "@/paper_types"
 import { Dropbox } from 'dropbox'
 
 
-@Component({components: {PaperDialog, ExpansionItem}})
+@Component({components: {PaperDialog, ExpansionItem, NavIcon}})
 export default class Home extends Vue {
   done_loading = false
   paper_data: PaperData[] = []

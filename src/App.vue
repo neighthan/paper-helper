@@ -1,15 +1,22 @@
 <template>
   <div id="app">
     <v-app>
-      <!-- <v-navigation-drawer app> -->
-      <!-- </v-navigation-drawer> -->
-      <router-link to="/">Home</router-link> |
+      <NavDrawer/>
       <router-view />
       <v-footer app>
       </v-footer>
     </v-app>
   </div>
 </template>
+
+<script lang="ts">
+import {Component, Vue} from "vue-property-decorator"
+import NavDrawer from "@/components/NavDrawer.vue"
+
+@Component({components: {NavDrawer}})
+export default class App extends Vue {
+}
+</script>
 
 <style lang="scss">
 #app {
