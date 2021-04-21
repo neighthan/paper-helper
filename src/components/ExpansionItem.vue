@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="expansion-item">
     <v-expansion-panel-header hide-actions>
       <v-card class="mx-auto" flat>
         <v-card-title>{{pd.title}}</v-card-title>
@@ -14,8 +14,11 @@
           </v-tooltip>
 
           <v-col v-if="editingPriority" cols="8" sm="4" md="2">
-            <v-slider v-model="pd.priority" :min="min_priority" :max="max_priority" thumb-label="always"
-              thumb-size="24" hide-details height="5" :ref="'slider' + pd.id"></v-slider>
+            <v-text-field
+              autofocus dense hide-details="auto"
+              v-model.number="priority" type="number"
+              @keyup.enter="commitPriority" @click.stop=""
+            ></v-text-field>
           </v-col>
           <v-tooltip top v-else>
             <template v-slot:activator="{on}">
@@ -58,6 +61,9 @@ export default class ExpansionItem extends Vue {
   @Prop() private pd!: PaperData
   @Prop() private idx!: number
   editingPriority = false
+  priority = this.pd.priority
+  min_priority = -100
+  max_priority = 100
 
   open_link(url: string) {
     window.open(url)
@@ -69,11 +75,13 @@ export default class ExpansionItem extends Vue {
     this.$emit("delete_pd", idx)
   }
   editPriority(paper: PaperData) {
-    console.log("TODO: edit priority for", paper)
-    // probably add a data field for edited priority, change to a text box with that
-    // as the model, then emit an event for Home.vue to update the paper once the user
-    // commits to the new priority (we need Home.vue to do this so that all the entries
-    // can be re-sorted)
+    this.editingPriority = true
+  }
+  commitPriority() {
+    this.editingPriority = false
+    if (this.pd.priority != this.priority) {
+      this.$emit("updatePriority", this.idx, this.priority)
+    }
   }
 }
 </script>

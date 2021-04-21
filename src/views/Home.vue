@@ -52,7 +52,7 @@
         <v-container fluid>
           <v-expansion-panels accordion>
             <v-expansion-panel v-for="(pd, idx) of filtered_paper_data" :key="pd.id">
-              <ExpansionItem :pd="pd" :idx="idx" @edit_pd="edit_pd" @delete_pd="delete_pd"/>
+              <ExpansionItem :pd="pd" :idx="idx" @edit_pd="edit_pd" @delete_pd="delete_pd" @updatePriority="updatePriority"/>
             </v-expansion-panel>
           </v-expansion-panels>
           <v-snackbar v-model="show_undelete_snackbar">
@@ -82,8 +82,6 @@ export default class Home extends Vue {
   paper_temp_data: PaperTempData = {}
   query = ""
   query_tags = ""
-  min_priority = -100
-  max_priority = 100
   deleted_pd: PaperData | null = null
   deleted_pd_idx = -1
   show_undelete_snackbar = false
@@ -175,6 +173,12 @@ export default class Home extends Vue {
       this.meta!.n_papers_since_backup += 1
     }
     this.updating = false
+  }
+  updatePriority(idx: number, priority: number) {
+    let paper = this.paper_data[idx]
+    paper.priority = priority
+    DB.papers.put(paper)
+    this.paper_data = this.paper_data.sort((pd1, pd2) => pd2.priority - pd1.priority)
   }
   async sync_dropbox() {
     if (!this.meta.dropboxToken) {
