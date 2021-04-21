@@ -51,52 +51,7 @@
         <v-container fluid>
           <v-expansion-panels accordion>
             <v-expansion-panel v-for="(pd, idx) of filtered_paper_data" :key="pd.id">
-              <v-expansion-panel-header hide-actions>
-                <v-card class="mx-auto" flat>
-                  <v-card-title>{{pd.title}}</v-card-title>
-                  <v-card-actions>
-                    <v-tooltip right>
-                      <template v-slot:activator="{on}">
-                        <v-btn text v-on="on" @click.native.stop="open_link(pd.url)">
-                          Open
-                        </v-btn>
-                      </template>
-                      <span>{{pd.url}}</span>
-                    </v-tooltip>
-
-                    <v-tooltip top v-if="!paper_temp_data[pd.id].show_slider">
-                      <template v-slot:activator="{on}">
-                        <v-btn icon v-on="on" @mousedown.native.stop="editPriority(pd)">
-                          <v-icon>swap_vert</v-icon>
-                        </v-btn>
-                      </template>
-                      <span>{{pd.priority}}</span>
-                    </v-tooltip>
-                    <v-col v-else cols="8" sm="4" md="2">
-                      <v-slider v-model="pd.priority" :min="min_priority" :max="max_priority" thumb-label="always"
-                        thumb-size="24" hide-details height="5" :ref="'slider' + pd.id"></v-slider>
-                    </v-col>
-
-                    <v-btn icon @click.native.stop="delete_pd(idx)">
-                      <v-icon>delete</v-icon>
-                    </v-btn>
-
-                    <v-btn icon @click.native.stop="edit_pd(idx)">
-                      <v-icon>edit</v-icon>
-                    </v-btn>
-
-                    <v-chip v-for="tag of pd.tags" :key="pd.id + tag" label outlined>{{tag}}</v-chip>
-
-                    <v-spacer></v-spacer>
-                    {{pd.date_string}}
-                  </v-card-actions>
-                </v-card>
-              </v-expansion-panel-header>
-              <v-expansion-panel-content>
-                <span class="abstract">
-                  {{pd.abstract}}
-                </span>
-              </v-expansion-panel-content>
+              <ExpansionItem :pd="pd" :idx="idx" @edit_pd="edit_pd" @delete_pd="delete_pd"/>
             </v-expansion-panel>
           </v-expansion-panels>
           <v-snackbar v-model="show_undelete_snackbar">
@@ -111,13 +66,14 @@
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
 import PaperDialog from "@/components/PaperDialog.vue"
+import ExpansionItem from "@/components/ExpansionItem.vue"
 import Dexie from "dexie"
 import {exportDB, importInto} from "dexie-export-import"
 import { PaperData, PaperTempData } from "@/paper_types"
 import { Dropbox } from 'dropbox'
 
 
-@Component({components: {PaperDialog}})
+@Component({components: {PaperDialog, ExpansionItem}})
 export default class Home extends Vue {
   done_loading = false
   paper_data: PaperData[] = []
@@ -137,9 +93,6 @@ export default class Home extends Vue {
 
   created() {
     loadFromDB(this, DB)
-  }
-  open_link(url: string) {
-    window.open(url)
   }
   delete_pd(idx: number) {
     this.deleted_pd = this.paper_data.splice(idx, 1)[0]
@@ -195,9 +148,6 @@ export default class Home extends Vue {
     importInto(DB, jsonFile, {overwriteValues: true})
     loadFromDB(this, DB)
     this.meta!.n_papers_since_backup = this.n_papers_all_red
-  }
-  editPriority(paper: PaperData) {
-    console.log("TODO: edit priority for", paper)
   }
   add_paper(save: boolean, paper: PaperData) {
     this.dialog = false
@@ -382,26 +332,6 @@ function loadFromDB(vue: Home, db: PapersDb) {
 </script>
 
 <style scoped lang="scss">
-.abstract {
-  font-size: medium;
-}
-
-.v-expansion-panel-header {
-  padding: 10px 16px;
-}
-
-.v-card__title {
-  padding: 0px;
-}
-
-.v-card__actions {
-  padding: 0px;
-}
-
-.v-chip {
-  margin-right: 4px;
-}
-
 .v-tooltip__content {
   font-size: 14px;
   padding: 3px 5px;
