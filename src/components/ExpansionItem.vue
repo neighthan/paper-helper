@@ -61,7 +61,7 @@ export default class ExpansionItem extends Vue {
   @Prop() private pd!: PaperData
   @Prop() private idx!: number
   editingPriority = false
-  priority = this.pd.priority
+  priority: string | number = this.pd.priority
   min_priority = -100
   max_priority = 100
 
@@ -79,6 +79,10 @@ export default class ExpansionItem extends Vue {
   }
   commitPriority() {
     this.editingPriority = false
+    // priority should only be a string if an empty or invalid input was submitted
+    if (typeof(this.priority) === "string") {
+      this.priority = this.pd.priority
+    }
     if (this.pd.priority != this.priority) {
       this.$emit("updatePriority", this.idx, this.priority)
     }
