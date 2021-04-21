@@ -13,7 +13,7 @@
             <span>{{pd.url}}</span>
           </v-tooltip>
 
-          <v-col v-if="editingPriority" cols="8" sm="4" md="2">
+          <v-col v-if="editingPriority" cols="1" class="ma-0 pa-0">
             <v-text-field
               autofocus dense hide-details="auto"
               v-model.number="priority" type="number"
