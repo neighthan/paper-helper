@@ -89,7 +89,7 @@ export default class Home extends Vue {
   updating = false
   dialog = false
   editingPaper: PaperData | null = null
-  meta: Meta = new Meta(0, 0, 0, [], "")
+  meta: Meta = new Meta(0, 0, [], "")
 
   created() {
     loadFromDB(this, DB)
@@ -155,8 +155,7 @@ export default class Home extends Vue {
     if(save) {
       if (!this.updating) {
         paper["time_added"] = Date.now()
-        paper["id"] = this.meta!.next_paper_id
-        this.meta!.next_paper_id += 1
+        paper["id"] = this.genId()
       }
       DB.papers.put(paper)
       this.paper_temp_data[paper.id] = {
@@ -203,6 +202,9 @@ export default class Home extends Vue {
       console.error(error)
     })
   }
+  genId() {
+    return Date.now().toString(16) + Math.random().toString(16).substr(2)
+  }
   // computed
   get filtered_paper_data() {
     let data = this.paper_data // direct reference; don't mutate!
@@ -226,19 +228,16 @@ export default class Home extends Vue {
 class Meta {
     id: number
     _n_papers_since_backup: number
-    _next_paper_id: number
     _tags: string[]
     _dropboxToken: string
     constructor(
       id: number,
       n_papers_since_backup: number,
-      next_paper_id: number,
       tags: string[],
       dropboxToken: string,
     ) {
       this.id = id
       this._n_papers_since_backup = n_papers_since_backup
-      this._next_paper_id = next_paper_id
       this._tags = tags
       this._dropboxToken = dropboxToken
     }
@@ -247,9 +246,6 @@ class Meta {
     // it's not a problem (just can't make it readonly)
     get n_papers_since_backup() {
       return this._n_papers_since_backup
-    }
-    get next_paper_id() {
-      return this._next_paper_id
     }
     get tags() {
       return this._tags
@@ -261,10 +257,6 @@ class Meta {
       this._n_papers_since_backup = n_papers_since_backup
       this._updateDb()
     }
-    set next_paper_id(next_paper_id) {
-      this._next_paper_id = next_paper_id
-      this._updateDb()
-    }
     set tags(tags) {
       this._tags = tags
       this._updateDb()
@@ -274,13 +266,12 @@ class Meta {
       this._updateDb()
     }
     _updateDb() {
-      // DB.meta.update(this._id, {n_papers_since_backup: this._n_papers_since_backup, next_paper_id: this._next_paper_id, tags: this._tags})
       DB.meta.update(this.id, this)
     }
 }
 
 class PapersDb extends Dexie {
-    papers: Dexie.Table<PaperData, number>
+    papers: Dexie.Table<PaperData, string>
     meta: Dexie.Table<Meta, number>
 
     constructor (dbName: string) {
@@ -288,7 +279,7 @@ class PapersDb extends Dexie {
         this.version(1).stores({
           // only declare properties you want to index (use in .where())
           papers: "id, title, abstract, tags",
-          meta: "id", // n_papers_since_backup, next_paper_id, tags
+          meta: "id", // n_papers_since_backup, tags
         })
         this.papers = this.table('papers')
         this.meta = this.table('meta')
@@ -312,7 +303,7 @@ function loadFromDB(vue: Home, db: PapersDb) {
   vue.done_loading = false
   db.meta.toArray().then((meta) => {
     if (!meta.length) {
-      vue.meta = new Meta(0, 0, 0, [], "")
+      vue.meta = new Meta(0, 0, [], "")
       db.meta.add(vue.meta)
     } else {
       if (meta.length > 1) {

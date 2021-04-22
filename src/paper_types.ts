@@ -1,5 +1,5 @@
 export type PaperData = {
-  id: number,
+  id: string,
   title: string,
   abstract: string,
   tags: string[],
@@ -16,5 +16,5 @@ export type PaperTempDatum = {
   date_string: string,
 }
 export type PaperTempData = {
-  [key: number]: PaperTempDatum
+  [key: string]: PaperTempDatum
 }
