@@ -86,7 +86,6 @@ export default class Home extends Vue {
   deleted_pd_idx = -1
   show_undelete_snackbar = false
   n_papers_all_red = 10
-  updating = false
   dialog = false
   editingPaper: PaperData | null = null
   meta: Meta = new Meta(0, 0, [], "")
@@ -109,7 +108,6 @@ export default class Home extends Vue {
   }
   edit_pd(idx: number) {
     this.editingPaper = this.paper_data[idx]
-    this.updating = true
     this.dialog = true
   }
   async download_data() {
@@ -153,13 +151,12 @@ export default class Home extends Vue {
     this.dialog = false
     this.editingPaper = null
     if(save) {
-      if (!this.updating) {
-        paper["time_added"] = Date.now()
-        paper["id"] = this.genId()
+      if (!paper.id) {
+        paper.time_added = Date.now()
+        paper.id = this.genId()
       }
       DB.papers.put(paper)
       this.paper_temp_data[paper.id] = {
-        show_slider: false,
         search_string: `${paper.title.toLowerCase()} ${paper.abstract.toLowerCase()}`,
         search_tags: getPrefixSet(paper.tags),
         date_string: new Date(paper.date || paper.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
@@ -171,7 +168,6 @@ export default class Home extends Vue {
       this.meta!.tags = [...new Set(this.meta!.tags.concat(paper.tags))]
       this.meta!.n_papers_since_backup += 1
     }
-    this.updating = false
   }
   updatePriority(idx: number, priority: number) {
     let paper = this.paper_data[idx]
@@ -316,7 +312,6 @@ function loadFromDB(vue: Home, db: PapersDb) {
   db.papers.toArray().then((papers) => {
     papers.forEach(p => {
       vue.paper_temp_data[p.id] = {
-        show_slider: false,
         search_string: `${p.title.toLowerCase()} ${p.abstract.toLowerCase()}`,
         search_tags: getPrefixSet(p.tags),
         date_string: new Date(p.date || p.time_added).toLocaleString("default", {month: "short", year: "numeric"}),

@@ -10,7 +10,6 @@ export type PaperData = {
   authors: string[],
 }
 export type PaperTempDatum = {
-  show_slider: boolean,
   search_string: string,
   search_tags: Set<string>,
   date_string: string,

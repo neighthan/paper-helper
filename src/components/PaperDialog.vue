@@ -41,7 +41,7 @@ import { PaperData } from "@/paper_types"
 export default class PaperDialog extends Vue {
   @Prop() private initialData!: PaperData
   @Prop() private all_tags!: string[]
-  id = -1 // id of paper being updated
+  id = "" // id of paper being updated
   timeAdded = -1
   title = ""
   url = ""
@@ -74,7 +74,7 @@ export default class PaperDialog extends Vue {
     if (newPaper) {
       this.updateFields(newPaper)
     } else {
-      this.id = -1 // id of paper being updated
+      this.id = "" // id of paper being updated
       this.timeAdded = -1
       this.title = ""
       this.url = ""
