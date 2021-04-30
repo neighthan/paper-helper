@@ -45,8 +45,7 @@
       </v-card>
     </v-expansion-panel-header>
     <v-expansion-panel-content>
-      <span class="abstract">
-        {{pd.abstract}}
+      <span class="abstract" v-html="mdAbstract">
       </span>
     </v-expansion-panel-content>
   </div>
@@ -55,6 +54,10 @@
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator"
 import { PaperData } from "@/paper_types"
+// TODO: I installed @types/markdown-it but this won't go away
+import MarkdownIt from "markdown-it"
+
+const MdRenderer = new MarkdownIt()
 
 @Component
 export default class ExpansionItem extends Vue {
@@ -86,6 +89,9 @@ export default class ExpansionItem extends Vue {
     if (this.pd.priority != this.priority) {
       this.$emit("updatePriority", this.idx, this.priority)
     }
+  }
+  get mdAbstract() {
+    return MdRenderer.render(this.pd.abstract)
   }
 }
 </script>
