@@ -74,6 +74,7 @@ import {exportDB, importInto} from "dexie-export-import"
 import { PaperData, PaperTempData } from "@/paper_types"
 import { Dropbox } from 'dropbox'
 
+const DB_PATH = "/paper-helper-db.json"
 
 @Component({components: {PaperDialog, ExpansionItem, NavIcon}})
 export default class Home extends Vue {
@@ -123,7 +124,7 @@ export default class Home extends Vue {
 
       // TODO: this line should only run if you actually download the file
       // (not if you cancel saving it)
-      this.meta!.n_papers_since_backup = 0
+      this.meta.n_papers_since_backup = 0
     } catch (error) {
       console.error(error)
     }
@@ -143,9 +144,9 @@ export default class Home extends Vue {
     file_picker.click()
   }
   async load_data(jsonFile: File) {
-    importInto(DB, jsonFile, {overwriteValues: true})
-    loadFromDB(this, DB)
-    this.meta!.n_papers_since_backup = this.n_papers_all_red
+    await importInto(DB, jsonFile, {overwriteValues: true})
+    await loadFromDB(this, DB)
+    this.meta.n_papers_since_backup = this.n_papers_all_red
   }
   add_paper(save: boolean, paper: PaperData) {
     this.dialog = false
@@ -165,8 +166,8 @@ export default class Home extends Vue {
         this.paper_data = papers.sort((pd1, pd2) => pd2.priority - pd1.priority)
       })
 
-      this.meta!.tags = [...new Set(this.meta!.tags.concat(paper.tags))]
-      this.meta!.n_papers_since_backup += 1
+      this.meta.tags = [...new Set(this.meta.tags.concat(paper.tags))]
+      this.meta.n_papers_since_backup += 1
     }
   }
   updatePriority(idx: number, priority: number) {
@@ -186,15 +187,32 @@ export default class Home extends Vue {
     }
     const dbx = new Dropbox({accessToken: this.meta.dropboxToken})
 
+    try {
+      let response = await dbx.filesDownload({path: DB_PATH})
+      let blob = (<any> response.result).fileBlob
+      const jsonBlob = await exportDB(DB)
+      await this.load_data(new File([blob], "paper-db.json"))
+      await this.load_data(new File([jsonBlob], "paper-db.json"))
+      this._dbUpload()
+    } catch (error) {
+      console.error("No file found.")
+      console.error(error)
+      this._dbUpload()
+    }
+  }
+  async _dbUpload() {
     const jsonBlob = await exportDB(DB, {prettyJson: true})
     const jsonStr = await jsonBlob.text()
+    const dbx = new Dropbox({accessToken: this.meta.dropboxToken})
     dbx.filesUpload({
-      path: "/paper-helper-db.json",
+      path: DB_PATH,
       contents: new File([jsonStr], "db.json", {type: "application/json"}),
       mode: {".tag": "overwrite"},
     }).then((response) => {
+      console.log("Finished uploading.")
       console.log(response)
     }).catch((error) => {
+      console.error("Error uploading!")
       console.error(error)
     })
   }
@@ -215,7 +233,7 @@ export default class Home extends Vue {
     return data
   }
   get download_red() {
-    const red = Math.round(255 * Math.min(this.meta!.n_papers_since_backup / this.n_papers_all_red, 1))
+    const red = Math.round(255 * Math.min(this.meta.n_papers_since_backup / this.n_papers_all_red, 1))
     return `rgba(${red}, 0, 0, 1)`
   }
 }
@@ -295,31 +313,30 @@ function getPrefixSet(tags: string[]) {
   return prefixes
 }
 
-function loadFromDB(vue: Home, db: PapersDb) {
+async function loadFromDB(vue: Home, db: PapersDb) {
   vue.done_loading = false
-  db.meta.toArray().then((meta) => {
-    if (!meta.length) {
-      vue.meta = new Meta(0, 0, [], "")
-      db.meta.add(vue.meta)
-    } else {
-      if (meta.length > 1) {
-        console.log("Warning: found multiple meta entries.")
-        console.log(meta)
-      }
-      vue.meta = meta[0]
+  let meta = await db.meta.toArray()
+  if (!meta.length) {
+    vue.meta = new Meta(0, 0, [], "")
+    db.meta.add(vue.meta)
+  } else {
+    if (meta.length > 1) {
+      console.log("Warning: found multiple meta entries! Only using the first.")
+      console.log(meta)
+    }
+    vue.meta = meta[0]
+  }
+
+  let papers = await db.papers.toArray()
+  papers.forEach(p => {
+    vue.paper_temp_data[p.id] = {
+      search_string: `${p.title.toLowerCase()} ${p.abstract.toLowerCase()}`,
+      search_tags: getPrefixSet(p.tags),
+      date_string: new Date(p.date || p.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
     }
   })
-  db.papers.toArray().then((papers) => {
-    papers.forEach(p => {
-      vue.paper_temp_data[p.id] = {
-        search_string: `${p.title.toLowerCase()} ${p.abstract.toLowerCase()}`,
-        search_tags: getPrefixSet(p.tags),
-        date_string: new Date(p.date || p.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
-      }
-    })
-    vue.paper_data = papers.sort((pd1, pd2) => pd2.priority - pd1.priority)
-    vue.done_loading = true // assumes meta is already done loading
-  })
+  vue.paper_data = papers.sort((pd1, pd2) => pd2.priority - pd1.priority)
+  vue.done_loading = true
 }
 </script>
 
