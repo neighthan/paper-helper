@@ -11,7 +11,7 @@
         </v-col>
 
         <v-spacer></v-spacer>
-        <v-dialog v-model="dialog">
+        <v-dialog v-model="dialog" persistent>
           <template v-slot:activator="{on, attrs}">
             <v-btn icon v-bind="attrs" v-on="on">
               <v-icon>add</v-icon>
