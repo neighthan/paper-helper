@@ -29,11 +29,11 @@
             <span>{{pd.priority}}</span>
           </v-tooltip>
 
-          <v-btn icon @click.native.stop="delete_pd(idx)">
+          <v-btn icon @click.native.stop="delete_pd()">
             <v-icon>delete</v-icon>
           </v-btn>
 
-          <v-btn icon @click.native.stop="edit_pd(idx)">
+          <v-btn icon @click.native.stop="edit_pd()">
             <v-icon>edit</v-icon>
           </v-btn>
 
@@ -62,7 +62,6 @@ const MdRenderer = new MarkdownIt()
 @Component
 export default class ExpansionItem extends Vue {
   @Prop() private pd!: PaperData
-  @Prop() private idx!: number
   editingPriority = false
   priority: string | number = this.pd.priority
   min_priority = -100
@@ -71,11 +70,11 @@ export default class ExpansionItem extends Vue {
   open_link(url: string) {
     window.open(url)
   }
-  edit_pd(idx: number) {
-    this.$emit("edit_pd", idx)
+  edit_pd() {
+    this.$emit("edit_pd", this.pd)
   }
-  delete_pd(idx: number) {
-    this.$emit("delete_pd", idx)
+  delete_pd() {
+    this.$emit("delete_pd", this.pd)
   }
   editPriority(paper: PaperData) {
     this.editingPriority = true
@@ -87,7 +86,7 @@ export default class ExpansionItem extends Vue {
       this.priority = this.pd.priority
     }
     if (this.pd.priority != this.priority) {
-      this.$emit("updatePriority", this.idx, this.priority)
+      this.$emit("updatePriority", this.pd, this.priority)
     }
   }
   get mdAbstract() {

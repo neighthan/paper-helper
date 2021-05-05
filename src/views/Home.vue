@@ -51,8 +51,8 @@
       <v-main>
         <v-container fluid>
           <v-expansion-panels accordion>
-            <v-expansion-panel v-for="(pd, idx) of filtered_paper_data" :key="pd.id">
-              <ExpansionItem :pd="pd" :idx="idx" @edit_pd="edit_pd" @delete_pd="delete_pd" @updatePriority="updatePriority"/>
+            <v-expansion-panel v-for="pd of filtered_paper_data" :key="pd.id">
+              <ExpansionItem :pd="pd" @edit_pd="edit_pd" @delete_pd="delete_pd" @updatePriority="updatePriority"/>
             </v-expansion-panel>
           </v-expansion-panels>
           <v-snackbar v-model="show_undelete_snackbar">
@@ -71,7 +71,7 @@ import ExpansionItem from "@/components/ExpansionItem.vue"
 import NavIcon from "@/components/NavIcon.vue"
 import Dexie from "dexie"
 import {exportDB, importInto} from "dexie-export-import"
-import { PaperData, PaperTempData } from "@/paper_types"
+import { CachedPaperData, PaperData, PaperTempData } from "@/paper_types"
 import { Dropbox } from 'dropbox'
 
 const DB_PATH = "/paper-helper-db.json"
@@ -79,12 +79,11 @@ const DB_PATH = "/paper-helper-db.json"
 @Component({components: {PaperDialog, ExpansionItem, NavIcon}})
 export default class Home extends Vue {
   done_loading = false
-  paper_data: PaperData[] = []
+  cached_paper_data: CachedPaperData = {}
   paper_temp_data: PaperTempData = {}
   query = ""
   query_tags = ""
   deleted_pd: PaperData | null = null
-  deleted_pd_idx = -1
   show_undelete_snackbar = false
   n_papers_all_red = 10
   dialog = false
@@ -94,21 +93,22 @@ export default class Home extends Vue {
   created() {
     loadFromDB(this, DB)
   }
-  delete_pd(idx: number) {
-    this.deleted_pd = this.paper_data.splice(idx, 1)[0]
-    this.deleted_pd_idx = idx
+  delete_pd(paper: PaperData) {
+    this.deleted_pd = paper
     this.show_undelete_snackbar = true
     DB.papers.delete(this.deleted_pd.id)
+    Vue.delete(this.cached_paper_data, paper.id)
+
   }
   undelete_pd() {
     this.show_undelete_snackbar = false
     if (this.deleted_pd !== null) {
-      this.paper_data.splice(this.deleted_pd_idx, 0, this.deleted_pd)
       DB.papers.add(this.deleted_pd)
+      Vue.set(this.cached_paper_data, this.deleted_pd.id, this.deleted_pd)
     }
   }
-  edit_pd(idx: number) {
-    this.editingPaper = this.paper_data[idx]
+  edit_pd(paper: PaperData) {
+    this.editingPaper = paper
     this.dialog = true
   }
   async download_data() {
@@ -148,7 +148,7 @@ export default class Home extends Vue {
     await loadFromDB(this, DB)
     this.meta.n_papers_since_backup = this.n_papers_all_red
   }
-  add_paper(save: boolean, paper: PaperData) {
+  async add_paper(save: boolean, paper: PaperData) {
     this.dialog = false
     this.editingPaper = null
     if(save) {
@@ -156,25 +156,20 @@ export default class Home extends Vue {
         paper.time_added = Date.now()
         paper.id = this.genId()
       }
-      DB.papers.put(paper)
+      await DB.papers.put(paper)
+      Vue.set(this.cached_paper_data, paper.id, paper)
       this.paper_temp_data[paper.id] = {
         search_string: `${paper.title.toLowerCase()} ${paper.abstract.toLowerCase()}`,
         search_tags: getPrefixSet(paper.tags),
         date_string: new Date(paper.date || paper.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
       }
-      DB.papers.toArray().then((papers) => {
-        this.paper_data = papers.sort((pd1, pd2) => pd2.priority - pd1.priority)
-      })
-
       this.meta.tags = [...new Set(this.meta.tags.concat(paper.tags))]
       this.meta.n_papers_since_backup += 1
     }
   }
-  updatePriority(idx: number, priority: number) {
-    let paper = this.paper_data[idx]
+  updatePriority(paper: PaperData, priority: number) {
     paper.priority = priority
     DB.papers.put(paper)
-    this.paper_data = this.paper_data.sort((pd1, pd2) => pd2.priority - pd1.priority)
   }
   async sync_dropbox() {
     if (!this.meta.dropboxToken) {
@@ -221,7 +216,7 @@ export default class Home extends Vue {
   }
   // computed
   get filtered_paper_data() {
-    let data = this.paper_data // direct reference; don't mutate!
+    let data = Object.values(this.cached_paper_data)
     if (this.query_tags != "") {
       const query_tags = this.query_tags.toLowerCase().split(" ")
       data = data.filter(pd => query_tags.every(tag => this.paper_temp_data[pd.id].search_tags.has(tag)))
@@ -230,7 +225,7 @@ export default class Home extends Vue {
       const query = this.query.toLowerCase()
       data = data.filter(pd => this.paper_temp_data[pd.id].search_string.includes(query))
     }
-    return data
+    return data.sort((pd1, pd2) => pd2.priority - pd1.priority)
   }
   get download_red() {
     const red = Math.round(255 * Math.min(this.meta.n_papers_since_backup / this.n_papers_all_red, 1))
@@ -335,7 +330,7 @@ async function loadFromDB(vue: Home, db: PapersDb) {
       date_string: new Date(p.date || p.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
     }
   })
-  vue.paper_data = papers.sort((pd1, pd2) => pd2.priority - pd1.priority)
+  vue.cached_paper_data = Object.fromEntries(papers.map(p => [p.id, p]))
   vue.done_loading = true
 }
 </script>

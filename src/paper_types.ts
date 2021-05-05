@@ -9,6 +9,10 @@ export type PaperData = {
   url: string,
   authors: string[],
 }
+// keys are paper.id
+export type CachedPaperData = {
+  [key: string]: PaperData
+}
 export type PaperTempDatum = {
   search_string: string,
   search_tags: Set<string>,
