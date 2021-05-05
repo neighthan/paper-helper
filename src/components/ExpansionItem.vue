@@ -54,7 +54,6 @@
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator"
 import { PaperData } from "@/paper_types"
-// TODO: I installed @types/markdown-it but this won't go away
 import MarkdownIt from "markdown-it"
 
 const MdRenderer = new MarkdownIt()

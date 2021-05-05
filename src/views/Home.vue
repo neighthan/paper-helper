@@ -69,12 +69,12 @@ import { Component, Vue } from "vue-property-decorator";
 import PaperDialog from "@/components/PaperDialog.vue"
 import ExpansionItem from "@/components/ExpansionItem.vue"
 import NavIcon from "@/components/NavIcon.vue"
-import Dexie from "dexie"
 import {exportDB, importInto} from "dexie-export-import"
 import { CachedPaperData, PaperData, PaperTempData } from "@/paper_types"
 import { Dropbox } from 'dropbox'
+import {DB, PapersDb, Meta} from "../db"
 
-const DB_PATH = "/paper-helper-db.json"
+const DROPBOX_PATH = "/paper-helper-db.json"
 
 @Component({components: {PaperDialog, ExpansionItem, NavIcon}})
 export default class Home extends Vue {
@@ -183,7 +183,7 @@ export default class Home extends Vue {
     const dbx = new Dropbox({accessToken: this.meta.dropboxToken})
 
     try {
-      let response = await dbx.filesDownload({path: DB_PATH})
+      let response = await dbx.filesDownload({path: DROPBOX_PATH})
       let blob = (<any> response.result).fileBlob
       const jsonBlob = await exportDB(DB)
       await this.load_data(new File([blob], "paper-db.json"))
@@ -200,7 +200,7 @@ export default class Home extends Vue {
     const jsonStr = await jsonBlob.text()
     const dbx = new Dropbox({accessToken: this.meta.dropboxToken})
     dbx.filesUpload({
-      path: DB_PATH,
+      path: DROPBOX_PATH,
       contents: new File([jsonStr], "db.json", {type: "application/json"}),
       mode: {".tag": "overwrite"},
     }).then((response) => {
@@ -233,70 +233,6 @@ export default class Home extends Vue {
   }
 }
 
-// TODO: pull db things into a separate .ts file then just do `import db from "db.ts"`
-class Meta {
-    id: number
-    _n_papers_since_backup: number
-    _tags: string[]
-    _dropboxToken: string
-    constructor(
-      id: number,
-      n_papers_since_backup: number,
-      tags: string[],
-      dropboxToken: string,
-    ) {
-      this.id = id
-      this._n_papers_since_backup = n_papers_since_backup
-      this._tags = tags
-      this._dropboxToken = dropboxToken
-    }
-
-    // dexie didn't like using a getter for id, but we don't want a setter anyway, so
-    // it's not a problem (just can't make it readonly)
-    get n_papers_since_backup() {
-      return this._n_papers_since_backup
-    }
-    get tags() {
-      return this._tags
-    }
-    get dropboxToken() {
-      return this._dropboxToken
-    }
-    set n_papers_since_backup(n_papers_since_backup) {
-      this._n_papers_since_backup = n_papers_since_backup
-      this._updateDb()
-    }
-    set tags(tags) {
-      this._tags = tags
-      this._updateDb()
-    }
-    set dropboxToken(dropboxToken) {
-      this._dropboxToken = dropboxToken
-      this._updateDb()
-    }
-    _updateDb() {
-      DB.meta.update(this.id, this)
-    }
-}
-
-class PapersDb extends Dexie {
-    papers: Dexie.Table<PaperData, string>
-    meta: Dexie.Table<Meta, number>
-
-    constructor (dbName: string) {
-        super(dbName)
-        this.version(1).stores({
-          // only declare properties you want to index (use in .where())
-          papers: "id, title, abstract, tags",
-          meta: "id", // n_papers_since_backup, tags
-        })
-        this.papers = this.table('papers')
-        this.meta = this.table('meta')
-        this.meta.mapToClass(Meta)
-    }
-}
-
-const DB = new PapersDb("paper-helper")
 
 function getPrefixSet(tags: string[]) {
   const prefixes = new Set([""])
