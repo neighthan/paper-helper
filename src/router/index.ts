@@ -18,7 +18,7 @@ const routes: Array<RouteConfig> = [
     component: Settings,
   },
   {
-    path: "/notes",
+    path: "/notes/:paperId",
     name: "Notes",
     component: Notes,
   },

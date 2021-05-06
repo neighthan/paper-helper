@@ -52,7 +52,10 @@
         <v-container fluid>
           <v-expansion-panels accordion>
             <v-expansion-panel v-for="pd of filtered_paper_data" :key="pd.id">
-              <ExpansionItem :pd="pd" @edit_pd="edit_pd" @delete_pd="delete_pd" @updatePriority="updatePriority"/>
+              <ExpansionItem :pd="pd"
+                @edit_pd="edit_pd" @delete_pd="delete_pd" @updatePriority="updatePriority"
+                @addNotes="addNotes"
+              />
             </v-expansion-panel>
           </v-expansion-panels>
           <v-snackbar v-model="show_undelete_snackbar">
@@ -110,6 +113,9 @@ export default class Home extends Vue {
   edit_pd(paper: PaperData) {
     this.editingPaper = paper
     this.dialog = true
+  }
+  addNotes(paper: PaperData) {
+    this.$router.push({path: `/notes/${paper.id}`})
   }
   async download_data() {
     try {

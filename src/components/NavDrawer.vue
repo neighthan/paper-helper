@@ -15,7 +15,7 @@ import {routes} from "../router/index"
 @Component
 export default class NavDrawer extends Vue {
   showNav = false
-  routes = routes
+  routes = routes.filter(r => !r.path.includes(":"))
   toggleNav() {
     this.showNav = !this.showNav
   }

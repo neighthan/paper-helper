@@ -37,6 +37,10 @@
             <v-icon>edit</v-icon>
           </v-btn>
 
+          <v-btn icon @click.native.stop="addNotes()">
+            <v-icon>open_in_new</v-icon>
+          </v-btn>
+
           <v-chip v-for="tag of pd.tags" :key="pd.id + tag" label outlined>{{tag}}</v-chip>
 
           <v-spacer></v-spacer>
@@ -74,6 +78,9 @@ export default class ExpansionItem extends Vue {
   }
   delete_pd() {
     this.$emit("delete_pd", this.pd)
+  }
+  addNotes() {
+    this.$emit("addNotes", this.pd)
   }
   editPriority(paper: PaperData) {
     this.editingPriority = true
