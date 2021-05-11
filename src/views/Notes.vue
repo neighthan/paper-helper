@@ -28,13 +28,11 @@
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
-import MarkdownIt from "markdown-it"
 import {DB} from "../db"
 import { PaperData } from "@/paper_types"
 import {genId} from "../utils"
+import {renderMarkdown, clearImgCache, getMarkdownForImg} from "../markdown"
 
-
-const MdRenderer = new MarkdownIt({html: true, breaks: true})
 const autosave = true
 let autosaveIntervalId: number | null = null
 
@@ -44,7 +42,6 @@ export default class Notes extends Vue {
   paperId = this.$route.params["paperId"]
   paper!: PaperData
   saving = false
-  imgCache: {[key: string]: string} = {}
 
   async beforeMount() {
     const paper = await DB.papers.get(this.paperId)
@@ -73,7 +70,7 @@ export default class Notes extends Vue {
             let dataUrl = event.target.result
             if (typeof(dataUrl) !== "string") return
             let id = genId()
-            let success = vue.addTextAtCursor(`<figure>\n  <img src=@"${id}">\n</figure>`)
+            let success = vue.addTextAtCursor(getMarkdownForImg(id))
             if (success) {
               DB.imgs.add({id, dataUrl})
             }
@@ -87,7 +84,7 @@ export default class Notes extends Vue {
     if (autosaveIntervalId !== null) {
       clearInterval(autosaveIntervalId)
     }
-    this.imgCache = {}
+    // clearImgCache()
     document.onpaste = null
   }
   async savePaper(showSaving=true) {
@@ -117,23 +114,8 @@ export default class Notes extends Vue {
     this.$nextTick(() => input.setSelectionRange(cursorPos, cursorPos))
     return true
   }
-  processMdBeforeRender(md: string) {
-    return md.replace(/<img src=@"(\w+)"/g, (fullMatch, id) => {
-      if (!this.imgCache.hasOwnProperty(id)) {
-        DB.imgs.get(id).then((img) => {
-          if (img) {
-            this.imgCache[id] = img.dataUrl
-            // TODO: force a re-render? The image won't display until re-rendered.
-            // If the user types something, that'll happen quickly, but if they don't,
-            // they might be confused why the image isn't showing up.
-          }
-        })
-      }
-      return `<img src="${this.imgCache[id]}"`
-    })
-  }
   get markdown() {
-    return MdRenderer.render(this.processMdBeforeRender(this.text))
+    return renderMarkdown(this.text)
   }
 }
 </script>

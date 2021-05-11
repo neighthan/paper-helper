@@ -49,8 +49,8 @@
       </v-card>
     </v-expansion-panel-header>
     <v-expansion-panel-content>
-      <span class="abstract" v-html="mdAbstract">
-      </span>
+      <div class="abstract" v-html="mdAbstract" style="text-align: left">
+      </div>
     </v-expansion-panel-content>
   </div>
 </template>
@@ -58,9 +58,7 @@
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator"
 import { PaperData } from "@/paper_types"
-import MarkdownIt from "markdown-it"
-
-const MdRenderer = new MarkdownIt()
+import {renderMarkdown} from "../markdown"
 
 @Component
 export default class ExpansionItem extends Vue {
@@ -96,7 +94,7 @@ export default class ExpansionItem extends Vue {
     }
   }
   get mdAbstract() {
-    return MdRenderer.render(this.pd.abstract)
+    return renderMarkdown(this.pd.abstract)
   }
 }
 </script>
