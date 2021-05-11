@@ -76,6 +76,7 @@ import {exportDB, importInto} from "dexie-export-import"
 import { CachedPaperData, PaperData, PaperTempData } from "@/paper_types"
 import { Dropbox } from 'dropbox'
 import {DB, PapersDb, Meta} from "../db"
+import {genId} from "../utils"
 
 const DROPBOX_PATH = "/paper-helper-db.json"
 
@@ -160,7 +161,7 @@ export default class Home extends Vue {
     if(save) {
       if (!paper.id) {
         paper.time_added = Date.now()
-        paper.id = this.genId()
+        paper.id = genId()
       }
       await DB.papers.put(paper)
       Vue.set(this.cached_paper_data, paper.id, paper)
@@ -216,9 +217,6 @@ export default class Home extends Vue {
       console.error("Error uploading!")
       console.error(error)
     })
-  }
-  genId() {
-    return Date.now().toString(16) + Math.random().toString(16).substr(2)
   }
   // computed
   get filtered_paper_data() {

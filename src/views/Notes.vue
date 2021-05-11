@@ -15,7 +15,10 @@
             <!-- ctrl.83 is ctrl+s; prevent stops it from saving the webpage -->
             <v-textarea autofocus v-model="text" @keydown.ctrl.83.prevent="savePaper"></v-textarea>
           </v-col>
-          <v-col v-html="markdown"></v-col>
+          <v-col>
+            <div v-html="markdown" style="text-align: left">
+            </div>
+          </v-col>
         </v-row>
       </v-container>
     </v-main>
@@ -28,8 +31,10 @@ import NavIcon from "@/components/NavIcon.vue"
 import MarkdownIt from "markdown-it"
 import {DB} from "../db"
 import { PaperData } from "@/paper_types"
+import {genId} from "../utils"
 
-const MdRenderer = new MarkdownIt()
+
+const MdRenderer = new MarkdownIt({html: true, breaks: true})
 const autosave = true
 let autosaveIntervalId: number | null = null
 
