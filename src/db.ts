@@ -46,9 +46,15 @@ class Meta {
   }
 }
 
+type Img = {
+  id: string
+  dataUrl: string
+}
+
 class PapersDb extends Dexie {
   papers: Dexie.Table<PaperData, string>
   meta: Dexie.Table<Meta, number>
+  imgs: Dexie.Table<Img, string>
 
   constructor (dbName: string) {
       super(dbName)
@@ -57,9 +63,13 @@ class PapersDb extends Dexie {
         papers: "id, title, abstract, tags",
         meta: "id", // n_papers_since_backup, tags
       })
+      this.version(2).stores({
+        imgs: "id" // dataUrl
+      })
       this.papers = this.table('papers')
       this.meta = this.table('meta')
       this.meta.mapToClass(Meta)
+      this.imgs = this.table('imgs')
   }
 }
 const DB = new PapersDb("paper-helper")

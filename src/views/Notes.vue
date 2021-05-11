@@ -13,7 +13,7 @@
         <v-row>
           <v-col>
             <!-- ctrl.83 is ctrl+s; prevent stops it from saving the webpage -->
-            <v-textarea autofocus v-model="text" @keydown.ctrl.83.prevent="savePaper"></v-textarea>
+            <v-textarea ref="textarea" autofocus v-model="text" @keydown.ctrl.83.prevent="savePaper"></v-textarea>
           </v-col>
           <v-col>
             <div v-html="markdown" style="text-align: left">
@@ -44,6 +44,7 @@ export default class Notes extends Vue {
   paperId = this.$route.params["paperId"]
   paper!: PaperData
   saving = false
+  imgCache: {[key: string]: string} = {}
 
   async beforeMount() {
     const paper = await DB.papers.get(this.paperId)
@@ -58,11 +59,36 @@ export default class Notes extends Vue {
         this.savePaper(false)
       }, 30_000)
     }
+    const vue = this
+    document.onpaste = function (event) {
+      if (!event.clipboardData) return
+      let items = event.clipboardData.items
+      for (let item of items) {
+        if (item.kind === 'file') {
+          const blob = item.getAsFile()
+          if (!blob) return
+          const reader = new FileReader()
+          reader.onload = function (event) {
+            if (!event.target) return
+            let dataUrl = event.target.result
+            if (typeof(dataUrl) !== "string") return
+            let id = genId()
+            let success = vue.addTextAtCursor(`<figure>\n  <img src=@"${id}">\n</figure>`)
+            if (success) {
+              DB.imgs.add({id, dataUrl})
+            }
+          }
+          reader.readAsDataURL(blob)
+        }
+      }
+    }
   }
   beforeDestroy() {
     if (autosaveIntervalId !== null) {
       clearInterval(autosaveIntervalId)
     }
+    this.imgCache = {}
+    document.onpaste = null
   }
   async savePaper(showSaving=true) {
     if (showSaving) {
@@ -78,8 +104,36 @@ export default class Notes extends Vue {
       }, 300)
     }
   }
+  addTextAtCursor(text: string) {
+    // TODO: remove <any> here (should check that this.$refs.textarea is the expected type else return false)
+    const input = (<any> this.$refs.textarea).$refs.input
+    let cursorPos = input.selectionEnd
+    this.text =
+        this.text.substring(0, cursorPos) +
+        text +
+        this.text.substring(cursorPos)
+    cursorPos += text.length
+    // Wait until vue finishes rendering the new text then update the cursor position
+    this.$nextTick(() => input.setSelectionRange(cursorPos, cursorPos))
+    return true
+  }
+  processMdBeforeRender(md: string) {
+    return md.replace(/<img src=@"(\w+)"/g, (fullMatch, id) => {
+      if (!this.imgCache.hasOwnProperty(id)) {
+        DB.imgs.get(id).then((img) => {
+          if (img) {
+            this.imgCache[id] = img.dataUrl
+            // TODO: force a re-render? The image won't display until re-rendered.
+            // If the user types something, that'll happen quickly, but if they don't,
+            // they might be confused why the image isn't showing up.
+          }
+        })
+      }
+      return `<img src="${this.imgCache[id]}"`
+    })
+  }
   get markdown() {
-    return MdRenderer.render(this.text)
+    return MdRenderer.render(this.processMdBeforeRender(this.text))
   }
 }
 </script>
