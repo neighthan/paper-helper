@@ -115,7 +115,13 @@ export default class Notes extends Vue {
     return true
   }
   get markdown() {
-    return renderMarkdown(this.text)
+    return renderMarkdown(this.text, () => {
+      // This is just to make Vue re-render by making it think the text changed.
+      // Is there a better method for this?
+      let text = this.text
+      this.text = ""
+      this.text = text
+    })
   }
 }
 </script>

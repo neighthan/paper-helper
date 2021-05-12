@@ -94,7 +94,13 @@ export default class ExpansionItem extends Vue {
     }
   }
   get mdAbstract() {
-    return renderMarkdown(this.pd.abstract)
+    return renderMarkdown(this.pd.abstract, () => {
+      // This is just to make Vue re-render by making it think the abstract changed.
+      // Is there a better method for this?
+      let abstract = this.pd.abstract
+      Vue.set(this.pd, "abstract", "")
+      Vue.set(this.pd, "abstract", abstract)
+    })
   }
 }
 </script>
