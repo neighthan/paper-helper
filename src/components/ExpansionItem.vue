@@ -4,7 +4,7 @@
       <v-card class="mx-auto" flat>
         <v-card-title>{{pd.title}}</v-card-title>
         <v-card-actions>
-          <v-tooltip right>
+          <v-tooltip v-if="pd.url" right>
             <template v-slot:activator="{on}">
               <v-btn text v-on="on" @click.native.stop="open_link(pd.url)">
                 Open
@@ -12,6 +12,7 @@
             </template>
             <span>{{pd.url}}</span>
           </v-tooltip>
+          <v-btn v-else text disabled>Open</v-btn>
 
           <v-col v-if="editingPriority" cols="1" class="ma-0 pa-0">
             <v-text-field
