@@ -93,8 +93,11 @@ export default class Home extends Vue {
   dialog = false
   editingPaper: PaperData | null = null
   meta: Meta = new Meta(0, 0, [], "")
+  initTags =  this.$route.params["tags"].split(",")
 
   created() {
+    console.log(this.initTags)
+    // TODO: change loadFromDB to use initTags
     loadFromDB(this, DB)
   }
   delete_pd(paper: PaperData) {
