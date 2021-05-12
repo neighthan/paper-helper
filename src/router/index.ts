@@ -1,6 +1,6 @@
 import Vue from "vue";
 import VueRouter, { RouteConfig } from "vue-router";
-import Home from "../views/Home.vue";
+import Search from "../views/Search.vue";
 import Settings from "../views/Settings.vue"
 import Notes from "../views/Notes.vue"
 
@@ -10,7 +10,7 @@ const routes: Array<RouteConfig> = [
   {
     path: "/",
     name: "Home",
-    component: Home,
+    component: Search,
   },
   {
     path: "/settings",
