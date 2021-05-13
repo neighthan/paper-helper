@@ -24,7 +24,7 @@ const routes: Array<RouteConfig> = [
     component: Notes,
   },
   {
-    path: "/search/:tags",
+    path: "/search/:queryId",
     name: "Search",
     component: Search,
   },

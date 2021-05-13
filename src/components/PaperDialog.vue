@@ -69,20 +69,22 @@ export default class PaperDialog extends Vue {
     this.date = paper.date
   }
 
+  resetFields() {
+    this.id = ""
+    this.timeAdded = -1
+    this.title = ""
+    this.url = ""
+    this.tags = []
+    this.priority = "0"
+    this.authors = ""
+    this.abstract = ""
+    this.date = ""
+  }
+
   @Watch("initialData")
   onPaperChanged(newPaper: PaperData, oldPaper: PaperData) {
     if (newPaper) {
       this.updateFields(newPaper)
-    } else {
-      this.id = "" // id of paper being updated
-      this.timeAdded = -1
-      this.title = ""
-      this.url = ""
-      this.tags = []
-      this.priority = "0"
-      this.authors = ""
-      this.abstract = ""
-      this.date = ""
     }
   }
 
@@ -101,9 +103,11 @@ export default class PaperDialog extends Vue {
   }
   save() {
     this.$emit("addPaper", true, this.editedPaper)
+    this.resetFields()
   }
   cancel() {
     this.$emit("addPaper", false, this.editedPaper)
+    this.resetFields()
   }
 }
 </script>
