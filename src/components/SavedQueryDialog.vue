@@ -29,13 +29,19 @@ import {SavedQuery} from "@/db"
 
 @Component
 export default class PaperDialog extends Vue {
-  @Prop() private initialData!: SavedQuery
+  @Prop() private initialData!: SavedQuery | null
   @Prop() private allTags!: string[]
   id = "" // id of query being updated
   name = ""
   searchString = ""
   tags: string[] = []
   timeAdded = -1
+
+  created() {
+    if (this.initialData) {
+      this.updateFields(this.initialData)
+    }
+  }
 
   updateFields(query: SavedQuery) {
     this.id = query.id
