@@ -9,7 +9,7 @@
             <v-icon>add</v-icon>
           </v-btn>
         </template>
-        <SavedQueryDialog :initialData="editingQuery" :allTags="['ml']" @add="add"/>
+        <SavedQueryDialog :initialData="editingQuery" :allTags="allTags" @add="add"/>
       </v-dialog>
     </v-app-bar>
     <v-main>
@@ -26,6 +26,10 @@
             </v-card>
           </v-flex>
         </v-layout>
+        <v-snackbar v-model="showUndeleteSnackbar">
+          Saved query deleted.
+          <v-btn text color="red" @click="undeleteQuery">Undo</v-btn>
+        </v-snackbar>
       </v-container>
     </v-main>
   </div>
@@ -38,7 +42,7 @@
 // pull the card out to be in components?
 import {Component, Vue} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
-import {DB, SavedQuery} from "../db"
+import {DB, getMeta, SavedQuery} from "../db"
 import {genId} from "../utils"
 import SavedQueryDialog from "@/components/SavedQueryDialog.vue"
 
@@ -46,12 +50,25 @@ import SavedQueryDialog from "@/components/SavedQueryDialog.vue"
 @Component({components: {NavIcon, SavedQueryDialog}})
 export default class Home extends Vue {
   dialog = false
+  showUndeleteSnackbar = false
+  allTags: string[] = []
+  deletedQuery: SavedQuery | null = null
   editingQuery: SavedQuery | null = null
   savedQueries: {[key: string]: SavedQuery} = {}
 
   async created() {
     let queries = await DB.savedQueries.toArray()
     this.savedQueries = Object.fromEntries(queries.map(q => [q.id, q]))
+    if (Object.keys(this.savedQueries).length === 0) {
+      let query: SavedQuery = {
+        name: "All", tags: [], searchString: "", id: genId(), timeAdded: Date.now()
+      }
+      DB.savedQueries.put(query)
+      Vue.set(this.savedQueries, query.id, query)
+    }
+    getMeta(DB).then(meta => {
+      this.allTags = meta.tags
+    })
   }
   async add(save: boolean, query: SavedQuery) {
     this.dialog = false
@@ -73,7 +90,17 @@ export default class Home extends Vue {
     this.dialog = true
   }
   remove(query: SavedQuery) {
-    console.log("deleting", query)
+    this.deletedQuery = query
+    this.showUndeleteSnackbar = true
+    DB.savedQueries.delete(query.id)
+    Vue.delete(this.savedQueries, query.id)
+  }
+  undeleteQuery() {
+    this.showUndeleteSnackbar = false
+    if (this.deletedQuery !== null) {
+      DB.savedQueries.add(this.deletedQuery)
+      Vue.set(this.savedQueries, this.deletedQuery.id, this.deletedQuery)
+    }
   }
 }
 </script>
