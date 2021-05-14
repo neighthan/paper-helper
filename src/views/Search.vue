@@ -269,7 +269,21 @@ async function loadFromDB(vue: Home, db: PapersDb, queryId: string) {
   }
   vue.queryName = query.name
   vue.queryTooltip = `Tags: ${query.tags}\nSearch: ${query.searchString}`
-  let papers = await db.papers.toArray()
+
+  const queryTags = query.tags.map(tag => tag.toLowerCase())
+  const queryStr = query.searchString.toLowerCase()
+  const papers = (await db.papers.toArray()).filter(paper => {
+    const tags = paper.tags.map(tag => tag.toLowerCase())
+    for (let tag of queryTags) {
+      if (!tags.includes(tag)) {
+        return false
+      }
+    }
+    if (paper.title.toLowerCase().includes(queryStr) || paper.abstract.toLowerCase().includes(queryStr)) {
+      return true
+    }
+    return false
+  })
   papers.forEach(p => {
     vue.paper_temp_data[p.id] = {
       search_string: `${p.title.toLowerCase()} ${p.abstract.toLowerCase()}`,
