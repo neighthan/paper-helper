@@ -75,7 +75,7 @@ import NavIcon from "@/components/NavIcon.vue"
 import {exportDB, importInto} from "dexie-export-import"
 import { CachedPaperData, PaperData, PaperTempData } from "@/paper_types"
 import { Dropbox } from 'dropbox'
-import {DB, PapersDb, Meta} from "../db"
+import {DB, PapersDb, Meta, getMeta} from "../db"
 import {genId} from "../utils"
 
 const DROPBOX_PATH = "/paper-helper-db.json"
@@ -253,18 +253,7 @@ function getPrefixSet(tags: string[]) {
 
 async function loadFromDB(vue: Home, db: PapersDb) {
   vue.done_loading = false
-  let meta = await db.meta.toArray()
-  if (!meta.length) {
-    vue.meta = new Meta(0, 0, [], "")
-    db.meta.add(vue.meta)
-  } else {
-    if (meta.length > 1) {
-      console.log("Warning: found multiple meta entries! Only using the first.")
-      console.log(meta)
-    }
-    vue.meta = meta[0]
-  }
-
+  vue.meta = await getMeta(db)
   let papers = await db.papers.toArray()
   papers.forEach(p => {
     vue.paper_temp_data[p.id] = {

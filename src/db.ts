@@ -85,6 +85,22 @@ class PapersDb extends Dexie {
       this.savedQueries = this.table("savedQueries")
   }
 }
-const DB = new PapersDb("paper-helper")
 
-export {DB, PapersDb, Meta, SavedQuery}
+async function getMeta(db: PapersDb) {
+  let metas = await db.meta.toArray()
+  let meta
+  if (!metas.length) {
+    meta = new Meta(0, 0, [], "")
+    db.meta.add(meta)
+  } else {
+    if (metas.length > 1) {
+      console.log("Warning: found multiple meta entries! Only using the first.")
+      console.log(metas)
+    }
+    meta = metas[0]
+  }
+  return meta
+}
+
+const DB = new PapersDb("paper-helper")
+export {DB, getMeta, PapersDb, Meta, SavedQuery}
