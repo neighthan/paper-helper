@@ -11,6 +11,14 @@
         </v-col>
 
         <v-spacer></v-spacer>
+          <v-tooltip open-delay="1000">
+            <template v-slot:activator="{on}">
+              <span v-on="on">{{queryName}}</span>
+            </template>
+            <span>{{queryTooltip}}</span>
+          </v-tooltip>
+        <v-spacer></v-spacer>
+
         <v-dialog v-model="dialog" persistent>
           <template v-slot:activator="{on, attrs}">
             <v-btn icon v-bind="attrs" v-on="on">
@@ -94,11 +102,11 @@ export default class Home extends Vue {
   editingPaper: PaperData | null = null
   meta: Meta = new Meta(0, 0, [], "")
   queryId =  this.$route.params["queryId"]
+  queryName = ""
+  queryTooltip = ""
 
   created() {
-    console.log(this.queryId)
-    // TODO: change loadFromDB to use initTags
-    loadFromDB(this, DB)
+    loadFromDB(this, DB, this.queryId)
   }
   delete_pd(paper: PaperData) {
     this.deleted_pd = paper
@@ -155,7 +163,7 @@ export default class Home extends Vue {
   }
   async load_data(jsonFile: File) {
     await importInto(DB, jsonFile, {overwriteValues: true})
-    await loadFromDB(this, DB)
+    await loadFromDB(this, DB, this.queryId)
     this.meta.n_papers_since_backup = this.n_papers_all_red
   }
   async add_paper(save: boolean, paper: PaperData) {
@@ -251,9 +259,16 @@ function getPrefixSet(tags: string[]) {
   return prefixes
 }
 
-async function loadFromDB(vue: Home, db: PapersDb) {
+async function loadFromDB(vue: Home, db: PapersDb, queryId: string) {
   vue.done_loading = false
   vue.meta = await getMeta(db)
+  const query = await db.savedQueries.get(queryId)
+  if (!query) {
+    console.error(`Unable to find query with id ${queryId}!`)
+    return
+  }
+  vue.queryName = query.name
+  vue.queryTooltip = `Tags: ${query.tags}\nSearch: ${query.searchString}`
   let papers = await db.papers.toArray()
   papers.forEach(p => {
     vue.paper_temp_data[p.id] = {
