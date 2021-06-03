@@ -28,6 +28,19 @@
           <PaperDialog :initialData="editingPaper" :all_tags="meta.tags" @addPaper="add_paper"/>
         </v-dialog>
 
+        <v-dialog v-model="addFromURLDialog">
+          <template v-slot:activator="{on, attrs}">
+            <v-btn icon v-bind="attrs" v-on="on">
+              <v-icon>add_circle_outline</v-icon>
+            </v-btn>
+          </template>
+          <v-card>
+            <v-card-text>
+              <v-text-field v-model="addURL" label="URL" autofocus @keypress.enter="addFromURL"></v-text-field>
+            </v-card-text>
+          </v-card>
+        </v-dialog>
+
         <v-tooltip open-delay="1000">
           <template v-slot:activator="{on}">
             <v-btn icon v-on="on" @click="sync_dropbox">
@@ -76,7 +89,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
+import { Component, Vue, Watch } from "vue-property-decorator";
 import PaperDialog from "@/components/PaperDialog.vue"
 import ExpansionItem from "@/components/ExpansionItem.vue"
 import NavIcon from "@/components/NavIcon.vue"
@@ -99,6 +112,8 @@ export default class Home extends Vue {
   show_undelete_snackbar = false
   n_papers_all_red = 10
   dialog = false
+  addFromURLDialog = false
+  addURL = ""
   editingPaper: PaperData | null = null
   meta: Meta = new Meta(0, 0, [], "")
   queryId =  this.$route.params["queryId"]
@@ -128,6 +143,55 @@ export default class Home extends Vue {
   }
   addNotes(paper: PaperData) {
     this.$router.push({path: `/notes/${paper.id}`})
+  }
+  @Watch("addFromURLDialog")
+  onPropertyChanged(newVal: boolean, oldVal: boolean) {
+    if (!newVal) {
+      this.addURL = ""
+    }
+  }
+  async addFromURL() {
+    const url = this.addURL
+    this.addFromURLDialog = false
+    const data: PaperData = {
+      id: genId(),
+      title: "",
+      abstract: "",
+      tags: [],
+      date: "",
+      time_added: Date.now(),
+      priority: 0,
+      url: url,
+      authors: [],
+    }
+    if (url.includes("arxiv.org")) {
+      // should be https://arxiv.org/abs/<id> or https://arxiv.org/pdf/<id>.pdf
+      const id = url.split("/").pop()?.replace(".pdf", "")
+      data.url = `https://arxiv.org/abs/${id}` // always use abstract url, not pdf
+      const response = await fetch(`https://export.arxiv.org/api/query?id_list=${id}`)
+      if (!response.ok) {
+        // snackbar w/ error message? response.statusText
+        return
+      }
+      const xml = await response.text()
+      let match = xml.match(/<title>(.*?)<\/title>/s)
+      data.title = match?.length == 2 ? match[1] : ""
+      match = xml.match(/<summary>(.*?)<\/summary>/s)
+      if (match?.length == 2) {
+        data.abstract = match[1].replaceAll("\n", " ").trim()
+      }
+      match = xml.match(/<published>(.*?)<\/published>/s)
+      if (match?.length == 2) {
+        data.date = match[1].split("T")[0].replaceAll("-", "/")
+      }
+      let matches = xml.matchAll(/<name>(.*?)<\/name>/gs)
+      data.authors = Array(...matches).map(m => m[1])
+      data.tags.push("paper")
+    }
+    // in Python, I would try to find an h1 for the url if not on arxiv. We could try to
+    // fetch(url) and do that here, but with CORS, we probably won't have access
+    this.editingPaper = data
+    this.dialog = true
   }
   async download_data() {
     try {
