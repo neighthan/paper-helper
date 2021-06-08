@@ -6,16 +6,29 @@ class Meta {
   _n_papers_since_backup: number
   _tags: string[]
   _dropboxToken: string
+  _redditUserAgent: string
+  _redditClientId: string
+  _redditClientSecret: string
+  _redditUsername: string
+
   constructor(
-    id: number,
-    n_papers_since_backup: number,
-    tags: string[],
-    dropboxToken: string,
+    id = 0,
+    n_papers_since_backup = 0,
+    tags: string[] = [],
+    dropboxToken = "",
+    redditUserAgent = "",
+    redditClientId = "",
+    redditClientSecret = "",
+    redditUsername = "",
   ) {
     this.id = id
     this._n_papers_since_backup = n_papers_since_backup
     this._tags = tags
     this._dropboxToken = dropboxToken
+    this._redditUserAgent = redditUserAgent
+    this._redditClientId = redditClientId
+    this._redditClientSecret = redditClientSecret
+    this._redditUsername = redditUsername
   }
 
   // dexie didn't like using a getter for id, but we don't want a setter anyway, so
@@ -29,6 +42,14 @@ class Meta {
   get dropboxToken() {
     return this._dropboxToken
   }
+  get redditInfo() {
+    return {
+      userAgent: this._redditUserAgent,
+      clientId: this._redditClientId,
+      clientSecret: this._redditClientSecret,
+      username: this._redditUsername,
+    }
+  }
   set n_papers_since_backup(n_papers_since_backup) {
     this._n_papers_since_backup = n_papers_since_backup
     this._updateDb()
@@ -39,6 +60,13 @@ class Meta {
   }
   set dropboxToken(dropboxToken) {
     this._dropboxToken = dropboxToken
+    this._updateDb()
+  }
+  set redditInfo(data) {
+    this._redditUserAgent = data.userAgent
+    this._redditClientId = data.clientId
+    this._redditClientSecret = data.clientSecret
+    this._redditUsername = data.username
     this._updateDb()
   }
   _updateDb() {
@@ -90,7 +118,7 @@ async function getMeta(db: PapersDb) {
   let metas = await db.meta.toArray()
   let meta
   if (!metas.length) {
-    meta = new Meta(0, 0, [], "")
+    meta = new Meta()
     db.meta.add(meta)
   } else {
     if (metas.length > 1) {

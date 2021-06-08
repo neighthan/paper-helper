@@ -1,13 +1,15 @@
-export type PaperData = {
-  id: string,
-  title: string,
-  abstract: string,
-  tags: string[],
-  date: string,
-  time_added: number,
-  priority: number,
-  url: string,
-  authors: string[],
+import { genId } from "./utils"
+
+export class PaperData {
+  id = genId()
+  title = ""
+  abstract = ""
+  tags: string[] = []
+  date = ""
+  time_added = Date.now()
+  priority = 0
+  url = ""
+  authors: string[] = []
 }
 // keys are paper.id
 export type CachedPaperData = {

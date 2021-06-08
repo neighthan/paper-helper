@@ -97,7 +97,7 @@ import {exportDB, importInto} from "dexie-export-import"
 import { CachedPaperData, PaperData, PaperTempData } from "@/paper_types"
 import { Dropbox } from 'dropbox'
 import {DB, PapersDb, Meta, getMeta} from "../db"
-import {genId} from "../utils"
+import {genId, getPaperFromArxiv} from "../utils"
 
 const DROPBOX_PATH = "/paper-helper-db.json"
 
@@ -115,7 +115,7 @@ export default class Home extends Vue {
   addFromURLDialog = false
   addURL = ""
   editingPaper: PaperData | null = null
-  meta: Meta = new Meta(0, 0, [], "")
+  meta: Meta = new Meta()
   queryId =  this.$route.params["queryId"]
   queryName = ""
   queryTooltip = ""
@@ -153,43 +153,15 @@ export default class Home extends Vue {
   async addFromURL() {
     const url = this.addURL
     this.addFromURLDialog = false
-    const data: PaperData = {
-      id: genId(),
-      title: "",
-      abstract: "",
-      tags: [],
-      date: "",
-      time_added: Date.now(),
-      priority: 0,
-      url: url,
-      authors: [],
-    }
+    let data: PaperData
     if (url.includes("arxiv.org")) {
-      // should be https://arxiv.org/abs/<id> or https://arxiv.org/pdf/<id>.pdf
-      const id = url.split("/").pop()?.replace(".pdf", "")
-      data.url = `https://arxiv.org/abs/${id}` // always use abstract url, not pdf
-      const response = await fetch(`https://export.arxiv.org/api/query?id_list=${id}`)
-      if (!response.ok) {
-        // snackbar w/ error message? response.statusText
-        return
-      }
-      const xml = await response.text()
-      let match = xml.match(/<title>(.*?)<\/title>/s)
-      data.title = match?.length == 2 ? match[1] : ""
-      match = xml.match(/<summary>(.*?)<\/summary>/s)
-      if (match?.length == 2) {
-        data.abstract = match[1].replaceAll("\n", " ").trim()
-      }
-      match = xml.match(/<published>(.*?)<\/published>/s)
-      if (match?.length == 2) {
-        data.date = match[1].split("T")[0].replaceAll("-", "/")
-      }
-      let matches = xml.matchAll(/<name>(.*?)<\/name>/gs)
-      data.authors = Array(...matches).map(m => m[1])
-      data.tags.push("paper")
+      data = await getPaperFromArxiv(url)
+    } else {
+      // in Python, I would try to find an h1 for the url if not on arxiv. We could try to
+      // fetch(url) and do that here, but with CORS, we probably won't have access
+      data = new PaperData()
+      data.url = url
     }
-    // in Python, I would try to find an h1 for the url if not on arxiv. We could try to
-    // fetch(url) and do that here, but with CORS, we probably won't have access
     this.editingPaper = data
     this.dialog = true
   }

@@ -19,8 +19,31 @@
               <v-btn text @click.native.stop="renameTags">Replace</v-btn>
             </v-card-actions>
           </v-card>
+          <v-card>
+            <v-card-title>Add Saved Reddit Posts</v-card-title>
+            <v-card-actions>
+              <v-dialog v-model="getPasswordDialog">
+                <template v-slot:activator="{on, attrs}">
+                  <v-btn text v-bind="attrs" v-on="on">
+                    Add
+                  </v-btn>
+                </template>
+                <v-card>
+                  <v-card-text>
+                    <v-text-field v-model="password" label="Password" autofocus @keypress.enter="addFromReddit"></v-text-field>
+                  </v-card-text>
+                </v-card>
+              </v-dialog>
+              <v-dialog v-model="redditInfoDialog">
+                <template v-slot:activator="{on, attrs}">
+                  <v-btn text v-bind="attrs" v-on="on">Update Reddit Info</v-btn>
+                </template>
+                <RedditInfoDialog @close="redditInfoDialog = false"/>
+              </v-dialog>
+            </v-card-actions>
+          </v-card>
         </v-col>
-        <v-snackbar v-model="showSnackbar">
+        <v-snackbar v-model="showSnackbar" :color="snackbarColor">
           {{snackbarMsg}}
         </v-snackbar>
       </v-container>
@@ -33,13 +56,19 @@ import {Component, Vue} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
 import {DB} from "../db"
 import { PaperData } from "@/paper_types"
+import getAllSavedPosts from "@/reddit"
+import RedditInfoDialog from "@/components/RedditInfoDialog.vue"
 
-@Component({components: {NavIcon}})
+@Component({components: {NavIcon, RedditInfoDialog}})
 export default class Settings extends Vue {
   oldTag = ""
   newTag = ""
   showSnackbar = false
   snackbarMsg = ""
+  redditInfoDialog = false
+  getPasswordDialog = false
+  password = ""
+  snackbarColor = "black"
 
   /**
    * It's fine to rename to an existing tag; this just merges the tags.
@@ -48,6 +77,7 @@ export default class Settings extends Vue {
     let metas = await DB.meta.toArray()
     if (!metas.length) {
       this.snackbarMsg = "No tags found!"
+      this.snackbarColor = "red"
       this.showSnackbar = true
       return
     }
@@ -59,6 +89,7 @@ export default class Settings extends Vue {
     const idx = meta.tags.indexOf(this.oldTag)
     if (idx == -1) {
       this.snackbarMsg = `Tag ${this.oldTag} not found!`
+      this.snackbarColor = "red"
       this.showSnackbar = true
       return
     }
@@ -83,7 +114,17 @@ export default class Settings extends Vue {
     this.snackbarMsg = `Renamed ${this.oldTag} -> ${this.newTag} in ${modifiedPapers.length} papers.`
     this.oldTag = ""
     this.newTag = ""
+    this.snackbarColor = "black"
     this.showSnackbar = true
+  }
+  addFromReddit() {
+    this.getPasswordDialog = false
+    getAllSavedPosts(this.password).then(msg => {
+      this.snackbarMsg = msg
+      this.snackbarColor =  msg.toLowerCase().includes("error") ? "red" : "black"
+      this.showSnackbar = true
+    })
+    this.password = ""
   }
 }
 </script>
