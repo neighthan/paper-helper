@@ -32,9 +32,12 @@ import {DB} from "../db"
 import { PaperData } from "@/paper_types"
 import {genId} from "../utils"
 import {renderMarkdown, clearImgCache, getMarkdownForImg} from "../markdown"
+import {loadMathjax} from "../mathjax"
 
 const autosave = true
 let autosaveIntervalId: number | null = null
+
+loadMathjax(1000)
 
 @Component({components: {NavIcon}})
 export default class Notes extends Vue {
