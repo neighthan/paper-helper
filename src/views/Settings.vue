@@ -19,6 +19,7 @@
               <v-btn text @click.native.stop="renameTags">Replace</v-btn>
             </v-card-actions>
           </v-card>
+
           <v-card>
             <v-card-title>Add Saved Reddit Posts</v-card-title>
             <v-card-actions>
@@ -42,6 +43,15 @@
               </v-dialog>
             </v-card-actions>
           </v-card>
+
+          <v-card>
+            <v-card-title>Keyboard Shortcuts</v-card-title>
+            <v-card-text>
+              <kbd>ctrl+h</kbd> go to home<br>
+              <kbd>ctrl+b</kbd> toggle navigation drawer
+            </v-card-text>
+          </v-card>
+
         </v-col>
         <v-snackbar v-model="showSnackbar" :color="snackbarColor">
           {{snackbarMsg}}

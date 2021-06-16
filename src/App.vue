@@ -15,6 +15,18 @@ import NavDrawer from "@/components/NavDrawer.vue"
 
 @Component({components: {NavDrawer}})
 export default class App extends Vue {
+  mounted() {
+    const vue = this
+    function kbShortcuts(e: KeyboardEvent) {
+      if (e.ctrlKey && e.key == "h") {
+        vue.$router.push("/")
+        e.preventDefault() // open chrome history
+      } else if (e.ctrlKey && e.key == "b") {
+        vue.$root.$emit("toggleNav")
+      }
+    }
+    document.addEventListener("keydown", kbShortcuts)
+  }
 }
 </script>
 
