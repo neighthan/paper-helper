@@ -97,7 +97,7 @@ import {exportDB, importInto} from "dexie-export-import"
 import { CachedPaperData, PaperData, PaperTempData } from "@/paper_types"
 import { Dropbox } from 'dropbox'
 import {DB, PapersDb, Meta, getMeta} from "../db"
-import {genId, getPaperFromArxiv} from "../utils"
+import {genId, getPaperFromArxiv, getDataFromYouTube} from "../utils"
 
 const DROPBOX_PATH = "/paper-helper-db.json"
 
@@ -156,6 +156,8 @@ export default class Home extends Vue {
     let data: PaperData
     if (url.includes("arxiv.org")) {
       data = await getPaperFromArxiv(url)
+    } else if (url.includes("youtube.com")) {
+      data = await getDataFromYouTube(url)
     } else {
       // in Python, I would try to find an h1 for the url if not on arxiv. We could try to
       // fetch(url) and do that here, but with CORS, we probably won't have access
