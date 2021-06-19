@@ -15,7 +15,7 @@
     <v-main>
       <v-container fluid grid-list-md>
         <v-layout row wrap>
-          <v-flex v-for="query of Object.values(savedQueries)" :key="query.id">
+          <v-flex v-for="query of sortedQueries" :key="query.id">
             <v-card>
               <v-card-title>{{query.name}}</v-card-title>
               <v-card-actions>
@@ -101,6 +101,10 @@ export default class Home extends Vue {
       DB.savedQueries.add(this.deletedQuery)
       Vue.set(this.savedQueries, this.deletedQuery.id, this.deletedQuery)
     }
+  }
+  get sortedQueries() {
+    const queries = Object.values(this.savedQueries)
+    return queries.sort((q1, q2) => q1.name.localeCompare(q2.name))
   }
 }
 </script>
