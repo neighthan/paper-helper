@@ -13,7 +13,10 @@
         <v-row>
           <v-col>
             <!-- ctrl.83 is ctrl+s; prevent stops it from saving the webpage -->
-            <v-textarea ref="textarea" autofocus v-model="text" @keydown.ctrl.83.prevent="savePaper"></v-textarea>
+            <v-textarea no-resize rows="20" ref="textarea" autofocus v-model="text"
+              @keydown.ctrl.83.prevent="savePaper"
+              @keydown.tab.prevent="tab"
+            ></v-textarea>
           </v-col>
           <v-col>
             <div v-html="markdown" style="text-align: left">
@@ -103,6 +106,9 @@ export default class Notes extends Vue {
         this.saving = false
       }, 300)
     }
+  }
+  tab() {
+    this.addTextAtCursor("  ")
   }
   addTextAtCursor(text: string) {
     // TODO: remove <any> here (should check that this.$refs.textarea is the expected type else return false)
