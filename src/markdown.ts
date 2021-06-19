@@ -1,7 +1,9 @@
 import MarkdownIt from "markdown-it"
+import MdFootnotes from "markdown-it-footnote"
 import {DB} from "./db"
 
 const MdRenderer = new MarkdownIt({html: true, breaks: true})
+MdRenderer.use(MdFootnotes)
 let imgCache: {[key: string]: string} = {}
 
 
