@@ -49,7 +49,7 @@ export default class PaperDialog extends Vue {
   priority = "0"
   authors = ""
   abstract = ""
-  date = ""
+  date = this.currentDate
 
   created() {
     if (this.initialData) {
@@ -78,7 +78,7 @@ export default class PaperDialog extends Vue {
     this.priority = "0"
     this.authors = ""
     this.abstract = ""
-    this.date = ""
+    this.date = this.currentDate
   }
 
   @Watch("initialData")
@@ -100,6 +100,9 @@ export default class PaperDialog extends Vue {
         time_added: this.timeAdded,
         date: this.date,
       }
+  }
+  get currentDate() {
+    return new Date().toISOString().split("T")[0].replaceAll("-", "/")
   }
   save() {
     this.$emit("addPaper", true, this.editedPaper)
