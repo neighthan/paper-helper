@@ -12,10 +12,10 @@
       <v-container fluid>
         <v-row>
           <v-col>
-            <!-- ctrl.83 is ctrl+s; prevent stops it from saving the webpage -->
             <v-textarea no-resize rows="20" ref="textarea" autofocus v-model="text"
-              @keydown.ctrl.83.prevent="savePaper"
+              @keydown.ctrl.s.prevent="savePaper"
               @keydown.tab.prevent="tab"
+              @keydown.ctrl.x.prevent="cutLineOrSelection"
             ></v-textarea>
           </v-col>
           <v-col>
@@ -110,18 +110,32 @@ export default class Notes extends Vue {
   tab() {
     this.addTextAtCursor("  ")
   }
+  cutLineOrSelection() {
+    let start = this.textArea.selectionStart
+    let end = this.textArea.selectionEnd
+    if (start === end) { // cut the whole line
+      let prevNewline = this.text.substring(0, start).lastIndexOf("\n")
+      prevNewline = prevNewline === -1 ? 0 : prevNewline + 1
+      let nextNewline = this.text.indexOf("\n", end)
+      // +1 to include the newline char
+      nextNewline = nextNewline === -1 ? this.text.length : nextNewline + 1
+      this.textArea.setSelectionRange(prevNewline, nextNewline)
+    }
+    document.execCommand("cut")
+  }
   addTextAtCursor(text: string) {
-    // TODO: remove <any> here (should check that this.$refs.textarea is the expected type else return false)
-    const input = (<any> this.$refs.textarea).$refs.input
-    let cursorPos = input.selectionEnd
+    let cursorPos = this.textArea.selectionEnd
     this.text =
         this.text.substring(0, cursorPos) +
         text +
         this.text.substring(cursorPos)
     cursorPos += text.length
     // Wait until vue finishes rendering the new text then update the cursor position
-    this.$nextTick(() => input.setSelectionRange(cursorPos, cursorPos))
+    this.$nextTick(() => this.textArea.setSelectionRange(cursorPos, cursorPos))
     return true
+  }
+  get textArea() {
+    return (<HTMLTextAreaElement> (<Vue> this.$refs.textarea).$refs.input)
   }
   get markdown() {
     return renderMarkdown(this.text, () => {
