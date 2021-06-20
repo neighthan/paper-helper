@@ -38,7 +38,7 @@
           <v-btn icon @click="openDialog">
             <v-icon>add</v-icon>
           </v-btn>
-          <v-dialog v-model="dialog" persistent>
+          <v-dialog v-model="dialog" persistent fullscreen="$vuetify.breakpoint.xsOnly">
             <PaperDialog :initialData="editingPaper" :all_tags="meta.tags" @addPaper="add_paper"/>
           </v-dialog>
 
