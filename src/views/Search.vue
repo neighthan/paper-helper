@@ -2,69 +2,86 @@
   <div class="home">
       <v-app-bar app>
         <NavIcon/>
-        <v-col cols="12" sm="6" md="3">
-          <v-text-field v-model="query" append-icon="search" hide-details></v-text-field>
-        </v-col>
+        <template v-if="$vuetify.breakpoint.xsOnly && focusSearch">
+          <v-col>
+            <v-text-field v-model="query" append-icon="search" hide-details></v-text-field>
+          </v-col>
+          <v-col>
+            <v-text-field label="Tags" v-model="query_tags" append-icon="search" hide-details></v-text-field>
+          </v-col>
+          <v-btn icon @click="focusSearch = false">
+            <v-icon>reply</v-icon>
+          </v-btn>
+        </template>
+        <template v-else>
+          <v-col cols="3" v-if="$vuetify.breakpoint.smAndUp">
+            <v-text-field v-model="query" append-icon="search" hide-details></v-text-field>
+          </v-col>
 
-        <v-col cols="12" sm="6" md="3">
-          <v-text-field label="Tags" v-model="query_tags" append-icon="search" hide-details></v-text-field>
-        </v-col>
+          <v-col cols="3" v-if="$vuetify.breakpoint.smAndUp">
+            <v-text-field label="Tags" v-model="query_tags" append-icon="search" hide-details></v-text-field>
+          </v-col>
 
-        <v-spacer></v-spacer>
+          <v-spacer></v-spacer>
+            <v-tooltip open-delay="1000">
+              <template v-slot:activator="{on}">
+                <span v-on="on">{{queryName}}</span>
+              </template>
+              <span>{{queryTooltip}}</span>
+            </v-tooltip>
+          <v-spacer></v-spacer>
+
+          <v-btn icon @click="focusSearch = true" v-if="$vuetify.breakpoint.xsOnly">
+            <v-icon>search</v-icon>
+          </v-btn>
+
+          <v-btn icon @click="openDialog">
+            <v-icon>add</v-icon>
+          </v-btn>
+          <v-dialog v-model="dialog" persistent>
+            <PaperDialog :initialData="editingPaper" :all_tags="meta.tags" @addPaper="add_paper"/>
+          </v-dialog>
+
+          <v-dialog v-model="addFromURLDialog">
+            <template v-slot:activator="{on, attrs}">
+              <v-btn icon v-bind="attrs" v-on="on">
+                <v-icon>add_circle_outline</v-icon>
+              </v-btn>
+            </template>
+            <v-card>
+              <v-card-text>
+                <v-text-field v-model="addURL" label="URL" autofocus @keypress.enter="addFromURL"></v-text-field>
+              </v-card-text>
+            </v-card>
+          </v-dialog>
+
           <v-tooltip open-delay="1000">
             <template v-slot:activator="{on}">
-              <span v-on="on">{{queryName}}</span>
+              <v-btn icon v-on="on" @click="sync_dropbox">
+                <v-icon>backup</v-icon>
+              </v-btn>
             </template>
-            <span>{{queryTooltip}}</span>
+            <span>Sync to Dropbox</span>
           </v-tooltip>
-        <v-spacer></v-spacer>
 
-        <v-btn icon @click="openDialog">
-          <v-icon>add</v-icon>
-        </v-btn>
-        <v-dialog v-model="dialog" persistent>
-          <PaperDialog :initialData="editingPaper" :all_tags="meta.tags" @addPaper="add_paper"/>
-        </v-dialog>
+          <v-tooltip open-delay="1000">
+            <template v-slot:activator="{on}">
+              <v-btn icon v-on="on" @click="download_data">
+                <v-icon :color="download_red">save_alt</v-icon>
+              </v-btn>
+            </template>
+            <span>Download</span>
+          </v-tooltip>
 
-        <v-dialog v-model="addFromURLDialog">
-          <template v-slot:activator="{on, attrs}">
-            <v-btn icon v-bind="attrs" v-on="on">
-              <v-icon>add_circle_outline</v-icon>
-            </v-btn>
-          </template>
-          <v-card>
-            <v-card-text>
-              <v-text-field v-model="addURL" label="URL" autofocus @keypress.enter="addFromURL"></v-text-field>
-            </v-card-text>
-          </v-card>
-        </v-dialog>
-
-        <v-tooltip open-delay="1000">
-          <template v-slot:activator="{on}">
-            <v-btn icon v-on="on" @click="sync_dropbox">
-              <v-icon>refresh</v-icon>
-            </v-btn>
-          </template>
-          <span>Sync to Dropbox</span>
-        </v-tooltip>
-
-        <v-tooltip open-delay="1000">
-          <template v-slot:activator="{on}">
-            <v-btn icon v-on="on" @click="download_data">
-              <v-icon :color="download_red">save_alt</v-icon>
-            </v-btn>
-          </template>
-          <span>Download</span>
-        </v-tooltip>
-
-        <v-tooltip open-delay="1000">
-          <template v-slot:activator="{on}">
-            <v-btn icon v-on="on" @click="load_file">
-              <v-icon>arrow_upward</v-icon>
-            </v-btn>
-          </template>
-          <span>Upload</span>
-        </v-tooltip>
+          <v-tooltip open-delay="1000">
+            <template v-slot:activator="{on}">
+              <v-btn icon v-on="on" @click="load_file">
+                <v-icon>arrow_upward</v-icon>
+              </v-btn>
+            </template>
+            <span>Upload</span>
+          </v-tooltip>
+        </template>
       </v-app-bar>
 
       <v-main>
@@ -118,6 +135,7 @@ export default class Home extends Vue {
   savedQueryTags: string[] = []
   queryName = ""
   queryTooltip = ""
+  focusSearch = false
 
   created() {
     loadFromDB(this, DB, this.queryId)
