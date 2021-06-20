@@ -1,10 +1,9 @@
 <template>
   <div class="home">
       <v-app-bar app>
-        <NavIcon/>
-        <template v-if="$vuetify.breakpoint.xsOnly && focusSearch">
+        <template v-if="focusSearch">
           <v-col>
-            <v-text-field v-model="query" append-icon="search" hide-details></v-text-field>
+            <v-text-field autofocus v-model="query" append-icon="search" hide-details></v-text-field>
           </v-col>
           <v-col>
             <v-text-field label="Tags" v-model="query_tags" append-icon="search" hide-details></v-text-field>
@@ -14,6 +13,7 @@
           </v-btn>
         </template>
         <template v-else>
+          <NavIcon/>
           <v-col cols="3" v-if="$vuetify.breakpoint.smAndUp">
             <v-text-field v-model="query" append-icon="search" hide-details></v-text-field>
           </v-col>
