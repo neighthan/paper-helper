@@ -3,6 +3,8 @@
     <v-app-bar app>
       <NavIcon/>
       <v-spacer></v-spacer>
+      {{paper.title}}
+      <v-spacer></v-spacer>
       <v-btn v-if="!saving" icon @click.native.stop="savePaper">
         <v-icon>save</v-icon>
       </v-btn>
@@ -46,10 +48,10 @@ loadMathjax(1000)
 export default class Notes extends Vue {
   text = ""
   paperId = this.$route.params["paperId"]
-  paper!: PaperData
+  paper = new PaperData() // filler until real paper comes at created
   saving = false
 
-  async beforeMount() {
+  async created() {
     const paper = await DB.papers.get(this.paperId)
     if (paper === undefined) {
       console.log(`Couldn't find paper with id ${this.paperId}!`)
