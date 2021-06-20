@@ -49,12 +49,10 @@ export default class PaperDialog extends Vue {
   priority = "0"
   authors = ""
   abstract = ""
-  date = this.currentDate
+  date = ""
 
   created() {
-    if (this.initialData) {
-      this.updateFields(this.initialData)
-    }
+    this.updateFields(this.initialData)
   }
 
   updateFields(paper: PaperData) {
@@ -69,23 +67,9 @@ export default class PaperDialog extends Vue {
     this.date = paper.date
   }
 
-  resetFields() {
-    this.id = ""
-    this.timeAdded = -1
-    this.title = ""
-    this.url = ""
-    this.tags = []
-    this.priority = "0"
-    this.authors = ""
-    this.abstract = ""
-    this.date = this.currentDate
-  }
-
   @Watch("initialData")
   onPaperChanged(newPaper: PaperData, oldPaper: PaperData) {
-    if (newPaper) {
-      this.updateFields(newPaper)
-    }
+    this.updateFields(newPaper)
   }
 
   get editedPaper() {
@@ -101,16 +85,11 @@ export default class PaperDialog extends Vue {
         date: this.date,
       }
   }
-  get currentDate() {
-    return new Date().toISOString().split("T")[0].replaceAll("-", "/")
-  }
   save() {
     this.$emit("addPaper", true, this.editedPaper)
-    this.resetFields()
   }
   cancel() {
     this.$emit("addPaper", false, this.editedPaper)
-    this.resetFields()
   }
 }
 </script>

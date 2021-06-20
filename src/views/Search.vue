@@ -19,12 +19,10 @@
           </v-tooltip>
         <v-spacer></v-spacer>
 
+        <v-btn icon @click="openDialog">
+          <v-icon>add</v-icon>
+        </v-btn>
         <v-dialog v-model="dialog" persistent>
-          <template v-slot:activator="{on, attrs}">
-            <v-btn icon v-bind="attrs" v-on="on">
-              <v-icon>add</v-icon>
-            </v-btn>
-          </template>
           <PaperDialog :initialData="editingPaper" :all_tags="meta.tags" @addPaper="add_paper"/>
         </v-dialog>
 
@@ -114,14 +112,16 @@ export default class Home extends Vue {
   dialog = false
   addFromURLDialog = false
   addURL = ""
-  editingPaper: PaperData | null = null
+  editingPaper: PaperData = new PaperData()
   meta: Meta = new Meta()
   queryId =  this.$route.params["queryId"]
+  savedQueryTags: string[] = []
   queryName = ""
   queryTooltip = ""
 
   created() {
     loadFromDB(this, DB, this.queryId)
+    this.editingPaper = this.makeDefaultPaper()
   }
   delete_pd(paper: PaperData) {
     this.deleted_pd = paper
@@ -163,6 +163,10 @@ export default class Home extends Vue {
       // fetch(url) and do that here, but with CORS, we probably won't have access
       data = new PaperData()
       data.url = url
+    }
+    data.tags.push(...this.savedQueryTags)
+    if (this.query_tags !== "") {
+      data.tags.push(...this.query_tags.split(" "))
     }
     this.editingPaper = data
     this.dialog = true
@@ -206,7 +210,6 @@ export default class Home extends Vue {
   }
   async add_paper(save: boolean, paper: PaperData) {
     this.dialog = false
-    this.editingPaper = null
     if(save) {
       if (!paper.id) {
         paper.time_added = Date.now()
@@ -267,7 +270,31 @@ export default class Home extends Vue {
       console.error(error)
     })
   }
+  openDialog() {
+    this.editingPaper = this.makeDefaultPaper()
+    this.dialog = true
+  }
+  makeDefaultPaper() {
+    const tags = [...this.savedQueryTags]
+    if (this.query_tags !== "") {
+      tags.push(...this.query_tags.split(" "))
+    }
+    return {
+      id: genId(),
+      time_added: -1,
+      title: "",
+      url: "",
+      tags: tags,
+      priority: 0,
+      authors: (<string[]> []),
+      abstract: "",
+      date: this.currentDate,
+    }
+  }
   // computed
+  get currentDate() {
+    return new Date().toISOString().split("T")[0].replaceAll("-", "/")
+  }
   get filtered_paper_data() {
     let data = Object.values(this.cached_paper_data)
     if (this.query_tags != "") {
@@ -306,6 +333,7 @@ async function loadFromDB(vue: Home, db: PapersDb, queryId: string) {
     return
   }
   vue.queryName = query.name
+  vue.savedQueryTags = query.tags
   vue.queryTooltip = `Tags: ${query.tags}\nSearch: ${query.searchString}`
 
   const queryTags = query.tags.map(tag => tag.toLowerCase())
