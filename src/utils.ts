@@ -36,6 +36,7 @@ export async function getPaperFromArxiv(url: string) {
  */
 export async function getDataFromYouTube(url: string) {
   const data = new PaperData()
+  data.url = url
   const apiKey = "AIzaSyAqYAFG23NRZbHT3QhrkvAX7AX0PWP8dJE"
   const match = url.match(/\?v=([^&]+)/)
   if (match === null) return data
@@ -51,6 +52,9 @@ export async function getDataFromYouTube(url: string) {
   data.tags = videoData.snippet.tags
   data.tags.push("watch")
   const duration = videoData.contentDetails.duration.replace("PT", "")
-  data.abstract = `Duration ${duration}\n![video thumbnail](${videoData.snippet.thumbnails.standard.url})\n\n${videoData.snippet.description}`
+  const thumbnail = videoData.snippet.thumbnails.standard
+  // TODO: try to use other thumbnails if standard isn't found
+  const thumbnailMd = thumbnail !== undefined ? `\n![video thumbnail](${thumbnail.url})` : ""
+  data.abstract = `Duration ${duration}${thumbnailMd}\n\n${videoData.snippet.description}`
   return data
 }
