@@ -87,6 +87,9 @@ type SavedQuery = {
   timeAdded: number,
 }
 
+// WARNING - mapToClass doesn't actually call the class constructor, so default
+// fields that don't already exist on an entry won't be added. See
+// https://dexie.org/docs/Table/Table.mapToClass() for more info.
 class PapersDb extends Dexie {
   papers: Dexie.Table<PaperData, string>
   meta: Dexie.Table<Meta, number>
@@ -105,6 +108,12 @@ class PapersDb extends Dexie {
       })
       this.version(3).stores({
         savedQueries: "id, name", // searchString, tags
+      })
+      this.version(4).upgrade(trans => {
+        trans.table("papers").toCollection().modify(paper => {
+          paper.lastSyncTime = -1
+          paper.lastModifiedTime = Date.now()
+        })
       })
       this.papers = this.table('papers')
       this.meta = this.table('meta')

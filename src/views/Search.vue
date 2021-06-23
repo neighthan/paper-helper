@@ -38,7 +38,7 @@
           <v-btn icon @click="openDialog">
             <v-icon>add</v-icon>
           </v-btn>
-          <v-dialog v-model="dialog" persistent fullscreen="$vuetify.breakpoint.xsOnly">
+          <v-dialog v-model="dialog" persistent :fullscreen="$vuetify.breakpoint.xsOnly">
             <PaperDialog :initialData="editingPaper" :all_tags="meta.tags" @addPaper="add_paper"/>
           </v-dialog>
 
@@ -293,25 +293,12 @@ export default class Home extends Vue {
     this.dialog = true
   }
   makeDefaultPaper() {
-    const tags = [...this.savedQueryTags]
+    const paper = new PaperData()
+    paper.tags = [...this.savedQueryTags]
     if (this.query_tags !== "") {
-      tags.push(...this.query_tags.split(" "))
+      paper.tags.push(...this.query_tags.split(" "))
     }
-    return {
-      id: genId(),
-      time_added: -1,
-      title: "",
-      url: "",
-      tags: tags,
-      priority: 0,
-      authors: (<string[]> []),
-      abstract: "",
-      date: this.currentDate,
-    }
-  }
-  // computed
-  get currentDate() {
-    return new Date().toISOString().split("T")[0].replaceAll("-", "/")
+    return paper
   }
   get filtered_paper_data() {
     let data = Object.values(this.cached_paper_data)

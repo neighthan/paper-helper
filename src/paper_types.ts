@@ -5,11 +5,13 @@ export class PaperData {
   title = ""
   abstract = ""
   tags: string[] = []
-  date = ""
+  date = new Date().toISOString().split("T")[0].replaceAll("-", "/")
   time_added = Date.now()
   priority = 0
   url = ""
   authors: string[] = []
+  lastSyncTime = -1 // never synced to dropbox
+  lastModifiedTime = Date.now()
 }
 // keys are paper.id
 export type CachedPaperData = {
