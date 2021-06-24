@@ -342,6 +342,7 @@ export default class Home extends Vue {
           newerPaper.abstract += `\n\n---\n# Merge conflict lines\n${addLines.join("\n")}`
         }
 
+        newerPaper.tags.push("merge-conflict")
         newerPaper.lastModifiedTime = Date.now()
         mergedPapers.push(newerPaper)
       }
