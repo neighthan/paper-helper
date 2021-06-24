@@ -87,6 +87,11 @@ type SavedQuery = {
   timeAdded: number,
 }
 
+type DeletedEntry = {
+  id: string,
+  lastSyncTime: number,
+}
+
 // WARNING - mapToClass doesn't actually call the class constructor, so default
 // fields that don't already exist on an entry won't be added. See
 // https://dexie.org/docs/Table/Table.mapToClass() for more info.
@@ -95,6 +100,7 @@ class PapersDb extends Dexie {
   meta: Dexie.Table<Meta, number>
   imgs: Dexie.Table<Img, string>
   savedQueries: Dexie.Table<SavedQuery, string>
+  deletedEntries: Dexie.Table<DeletedEntry, string>
 
   constructor (dbName: string) {
       super(dbName)
@@ -115,11 +121,15 @@ class PapersDb extends Dexie {
           paper.lastModifiedTime = Date.now()
         })
       })
+      this.version(5).stores({
+        deletedEntries: "id", // lastSyncTime
+      })
       this.papers = this.table('papers')
       this.meta = this.table('meta')
       this.meta.mapToClass(Meta)
       this.imgs = this.table('imgs')
       this.savedQueries = this.table("savedQueries")
+      this.deletedEntries = this.table("deletedEntries")
   }
 }
 

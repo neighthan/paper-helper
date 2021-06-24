@@ -73,17 +73,20 @@ export default class PaperDialog extends Vue {
   }
 
   get editedPaper() {
-    return {
-        id: this.id,
-        priority: parseFloat(this.priority),
-        tags: this.tags.map(tag => tag.trim()),
-        title: this.title,
-        url: this.url,
-        abstract: this.abstract,
-        authors: this.authors.split(", "),
-        time_added: this.timeAdded,
-        date: this.date,
-      }
+    const paper: PaperData = {
+      id: this.id,
+      priority: parseFloat(this.priority),
+      tags: this.tags.map(tag => tag.trim()),
+      title: this.title,
+      url: this.url,
+      abstract: this.abstract,
+      authors: this.authors.split(", "),
+      time_added: this.timeAdded,
+      date: this.date,
+      lastSyncTime: -1,
+      lastModifiedTime: Date.now(),
+    }
+    return paper
   }
   save() {
     this.$emit("addPaper", true, this.editedPaper)
