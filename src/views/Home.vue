@@ -2,7 +2,13 @@
   <div id="home">
     <v-app-bar>
       <NavIcon/>
+
       <v-spacer></v-spacer>
+      <v-col>
+        <v-text-field autofocus v-model="search" @keydown.enter="openFirst" append-icon="search"></v-text-field>
+      </v-col>
+      <v-spacer></v-spacer>
+
       <v-dialog v-model="dialog">
         <template v-slot:activator="{on, attrs}">
           <v-btn icon v-bind="attrs" v-on="on">
@@ -15,7 +21,7 @@
     <v-main>
       <v-container fluid grid-list-md>
         <v-layout row wrap>
-          <v-flex v-for="query of sortedQueries" :key="query.id">
+          <v-flex v-for="query of sortedFilteredQueries" :key="query.id">
             <v-card>
               <v-card-title>{{query.name}}</v-card-title>
               <v-card-actions>
@@ -55,6 +61,7 @@ export default class Home extends Vue {
   deletedQuery: SavedQuery | null = null
   editingQuery: SavedQuery | null = null
   savedQueries: {[key: string]: SavedQuery} = {}
+  search = ""
 
   async created() {
     let queries = await DB.savedQueries.toArray()
@@ -82,6 +89,9 @@ export default class Home extends Vue {
       Vue.set(this.savedQueries, query.id, query)
     }
   }
+  openFirst() {
+    this.open(this.sortedFilteredQueries[0])
+  }
   open(query: SavedQuery) {
     this.$router.push({path: `/search/${query.id}`})
   }
@@ -102,9 +112,11 @@ export default class Home extends Vue {
       Vue.set(this.savedQueries, this.deletedQuery.id, this.deletedQuery)
     }
   }
-  get sortedQueries() {
+  get sortedFilteredQueries() {
     const queries = Object.values(this.savedQueries)
-    return queries.sort((q1, q2) => q1.name.localeCompare(q2.name))
+    return queries
+      .filter(q => q.name.toLowerCase().includes(this.search.toLowerCase()))
+      .sort((q1, q2) => q1.name.localeCompare(q2.name))
   }
 }
 </script>
