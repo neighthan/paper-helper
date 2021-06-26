@@ -1,5 +1,5 @@
 <template>
-  <div id="new-paper-dialog">
+  <div id="new-paper-dialog" @keydown.ctrl.s.prevent="save">
     <v-card>
       <v-card-text>
         <v-text-field label="Title" v-model="title" dense autofocus></v-text-field>
