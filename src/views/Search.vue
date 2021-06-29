@@ -15,7 +15,9 @@
         <template v-else>
           <NavIcon/>
           <v-col cols="3" v-if="$vuetify.breakpoint.smAndUp">
-            <v-text-field v-model="query" append-icon="search" hide-details></v-text-field>
+            <v-text-field autofocus v-model="query" append-icon="search" hide-details
+              @keydown.enter="openFirst"
+            ></v-text-field>
           </v-col>
 
           <v-col cols="3" v-if="$vuetify.breakpoint.smAndUp">
@@ -168,6 +170,9 @@ export default class Home extends Vue {
   }
   addNotes(paper: PaperData) {
     this.$router.push({path: `/notes/${paper.id}`})
+  }
+  openFirst() {
+    this.addNotes(this.filtered_paper_data[0])
   }
   @Watch("addFromURLDialog")
   onPropertyChanged(newVal: boolean, oldVal: boolean) {
