@@ -17,7 +17,8 @@
             <v-textarea no-resize rows="20" ref="textarea" autofocus v-model="text"
               @keydown.ctrl.s.prevent="savePaper"
               @keydown.tab.prevent="tab"
-              @keydown.ctrl.x.prevent="cutLineOrSelection"
+              @keydown.ctrl.c.prevent="execCutCopy('copy')"
+              @keydown.ctrl.x.prevent="execCutCopy('cut')"
             ></v-textarea>
           </v-col>
           <v-col>
@@ -112,7 +113,7 @@ export default class Notes extends Vue {
   tab() {
     this.addTextAtCursor("  ")
   }
-  cutLineOrSelection() {
+  execCutCopy(cmd: string) {
     let start = this.textArea.selectionStart
     let end = this.textArea.selectionEnd
     if (start === end) { // cut the whole line
@@ -123,7 +124,10 @@ export default class Notes extends Vue {
       nextNewline = nextNewline === -1 ? this.text.length : nextNewline + 1
       this.textArea.setSelectionRange(prevNewline, nextNewline)
     }
-    document.execCommand("cut")
+    document.execCommand(cmd)
+    if (cmd == "copy") {
+      this.textArea.setSelectionRange(start, start)
+    }
   }
   addTextAtCursor(text: string) {
     let cursorPos = this.textArea.selectionEnd
