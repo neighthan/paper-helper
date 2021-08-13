@@ -13,7 +13,7 @@
     <v-main>
       <v-container fluid>
         <v-row>
-          <v-col>
+          <v-col v-if="textVisible">
             <v-textarea no-resize rows="20" ref="textarea" autofocus v-model="text"
               @keydown.ctrl.s.prevent="savePaper"
               @keydown.tab.prevent="tab"
@@ -21,7 +21,7 @@
               @keydown.ctrl.x.prevent="execCutCopy('cut')"
             ></v-textarea>
           </v-col>
-          <v-col>
+          <v-col v-if="renderVisible">
             <div v-html="markdown" style="text-align: left">
             </div>
           </v-col>
@@ -51,6 +51,8 @@ export default class Notes extends Vue {
   paperId = this.$route.params["paperId"]
   paper = new PaperData() // filler until real paper comes at created
   saving = false
+  textVisible = true
+  renderVisible = true
 
   async created() {
     const paper = await DB.papers.get(this.paperId)
@@ -65,6 +67,7 @@ export default class Notes extends Vue {
         this.savePaper(false)
       }, 30_000)
     }
+
     const vue = this
     document.onpaste = function (event) {
       if (!event.clipboardData) return
@@ -88,6 +91,7 @@ export default class Notes extends Vue {
         }
       }
     }
+    document.addEventListener("keydown", this.toggleViews)
   }
   beforeDestroy() {
     if (autosaveIntervalId !== null) {
@@ -95,6 +99,14 @@ export default class Notes extends Vue {
     }
     // clearImgCache()
     document.onpaste = null
+    document.removeEventListener("keydown", this.toggleViews)
+  }
+  toggleViews(e: KeyboardEvent) {
+    if (e.ctrlKey && e.key === "[") {
+      this.textVisible = !this.textVisible
+    } else if (e.ctrlKey && e.key === "]") {
+      this.renderVisible = !this.renderVisible
+    }
   }
   async savePaper(showSaving=true) {
     if (showSaving) {
