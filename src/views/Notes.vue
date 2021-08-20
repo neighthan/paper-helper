@@ -1,6 +1,6 @@
 <template>
   <div id="notes">
-    <v-app-bar app>
+    <v-app-bar app height="48">
       <NavIcon/>
       <v-spacer></v-spacer>
       {{paper.title}}
@@ -14,7 +14,7 @@
       <v-container fluid>
         <v-row>
           <v-col v-if="textVisible">
-            <v-textarea no-resize rows="20" ref="textarea" autofocus v-model="text"
+            <v-textarea no-resize ref="textarea" autofocus v-model="text" id="mdText"
               @keydown.ctrl.s.prevent="savePaper"
               @keydown.tab.prevent="tab"
               @keydown.ctrl.c.prevent="execCutCopy('copy')"
@@ -155,17 +155,20 @@ export default class Notes extends Vue {
   get textArea() {
     return (<HTMLTextAreaElement> (<Vue> this.$refs.textarea).$refs.input)
   }
-  get markdown() {
-    return renderMarkdown(this.text, () => {
-      // This is just to make Vue re-render by making it think the text changed.
-      // Is there a better method for this?
-      let text = this.text
-      this.text = ""
-      this.text = text
-    })
-  }
 }
 </script>
 
-<style scoped lang="scss">
+<style lang="scss">
+html {
+  overflow-y: hidden;
+}
+// using #mdText doesn't work because there's padding on one of the parent divs
+// created around the textarea
+.v-input {
+  margin-top: 0px;
+  padding-top: 0px;
+}
+#mdText {
+  height: calc(97vh - 48px);
+}
 </style>
