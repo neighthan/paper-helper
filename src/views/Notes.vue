@@ -22,8 +22,7 @@
             ></v-textarea>
           </v-col>
           <v-col v-if="renderVisible">
-            <div v-html="markdown" style="text-align: left">
-            </div>
+            <Markdown :mdString="text"/>
           </v-col>
         </v-row>
       </v-container>
@@ -34,10 +33,11 @@
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
+import Markdown from "@/components/Markdown.vue"
 import {DB} from "../db"
 import { PaperData } from "@/paper_types"
 import {genId} from "../utils"
-import {renderMarkdown, clearImgCache, getMarkdownForImg} from "../markdown"
+import {clearImgCache, getMarkdownForImg} from "../markdown"
 import {loadMathjax} from "../mathjax"
 
 const autosave = true
@@ -45,7 +45,7 @@ let autosaveIntervalId: number | null = null
 
 loadMathjax(1000)
 
-@Component({components: {NavIcon}})
+@Component({components: {NavIcon, Markdown}})
 export default class Notes extends Vue {
   text = ""
   paperId = this.$route.params["paperId"]

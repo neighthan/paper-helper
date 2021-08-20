@@ -7,9 +7,8 @@ MdRenderer.use(MdFootnotes)
 let imgCache: {[key: string]: string} = {}
 
 
-// TODO: make callback optional
 // callback can be used to make a component re-render once images are loaded
-function processMdBeforeRender(md: string, callback: any) {
+function includeImgs(md: string, callback?: any) {
   let unloadedIds: string[] = []
   md = md.replace(/<img src=@"(\w+)"/g, (fullMatch, id) => {
     if (!imgCache.hasOwnProperty(id)) {
@@ -25,7 +24,7 @@ function processMdBeforeRender(md: string, callback: any) {
         imgCache[img.id] = img.dataUrl
         newImgLoaded = true
       }
-      if (newImgLoaded) {
+      if (newImgLoaded && callback !== undefined) {
         callback()
       }
     })
@@ -33,7 +32,14 @@ function processMdBeforeRender(md: string, callback: any) {
   return md
 }
 
-export function renderMarkdown(md: string, callback: any) {
+
+function processMdBeforeRender(md: string, callback?: any) {
+  md = includeImgs(md, callback)
+  // md = addCollapsers(md)
+  return md
+}
+
+export function renderMarkdown(md: string, callback?: any) {
   return MdRenderer.render(processMdBeforeRender(md, callback))
 }
 
