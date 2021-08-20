@@ -35,10 +35,13 @@ export default class Markdown extends Vue {
 }
 
 #renderedMd blockquote {
-  padding: 10px 20px;
-  margin: 0 0 20px;
-  font-size: 17.5px;
+  padding: 5px 15px;
+  margin: 0 0 10px;
   border-left: 5px solid #eee;
+}
+
+#renderedMd blockquote p {
+  margin-bottom: 0px;
 }
 
 #renderedMd pre {
