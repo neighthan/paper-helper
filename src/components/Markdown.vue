@@ -32,6 +32,7 @@ export default class Markdown extends Vue {
   text-align: left;
   overflow-y: scroll;
   height: calc(97vh - 48px);
+  word-wrap: break-word;
 }
 
 #renderedMd blockquote {

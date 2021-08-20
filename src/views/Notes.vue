@@ -13,7 +13,7 @@
     <v-main>
       <v-container fluid>
         <v-row>
-          <v-col v-if="textVisible">
+          <v-col v-if="textVisible" style="width: 50vh">
             <v-textarea no-resize ref="textarea" autofocus v-model="text" id="mdText"
               @keydown.ctrl.s.prevent="savePaper"
               @keydown.tab.prevent="tab"
@@ -21,7 +21,7 @@
               @keydown.ctrl.x.prevent="execCutCopy('cut')"
             ></v-textarea>
           </v-col>
-          <v-col v-if="renderVisible">
+          <v-col v-if="renderVisible" style="width: 50vh">
             <Markdown :mdString="text"/>
           </v-col>
         </v-row>
