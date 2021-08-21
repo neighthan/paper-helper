@@ -2,7 +2,7 @@
   <v-row id="textMd">
     <v-col v-if="textVisible" style="width: 50vh">
       <v-textarea no-resize ref="textarea" autofocus v-model="text" id="mdText"
-        @keydown.ctrl.s.prevent="savePaper"
+        @keydown.ctrl.s.prevent="savePaper(false)"
         @keydown.tab.prevent="tab"
         @keydown.ctrl.c.prevent="execCutCopy('copy')"
         @keydown.ctrl.x.prevent="execCutCopy('cut')"
@@ -15,14 +15,14 @@
 </template>
 
 <script lang="ts">
-import {Component, Vue} from "vue-property-decorator"
+import {Component, Vue, Prop, Watch} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
 import Markdown from "@/components/Markdown.vue"
 import {DB} from "../db"
-import { PaperData } from "@/paper_types"
 import {genId} from "../utils"
 import {clearImgCache, getMarkdownForImg} from "../markdown"
 import {loadMathjax} from "../mathjax"
+import { PaperData } from "@/paper_types"
 
 const autosave = true
 let autosaveIntervalId: number | null = null
@@ -31,22 +31,16 @@ loadMathjax(1000)
 
 @Component({components: {NavIcon, Markdown}})
 export default class MdText extends Vue {
+  @Prop() private paper!: PaperData
   text = ""
-  paperId = this.$route.params["paperId"]
-  paper = new PaperData() // filler until real paper comes at created
   textVisible = true
   renderVisible = true
 
   async created() {
-    const paper = await DB.papers.get(this.paperId)
-    if (paper === undefined) {
-      return
-    }
-    this.paper = paper
-    this.text = paper.abstract
+    this.text = this.paper.abstract
     if (autosave) {
       autosaveIntervalId = setInterval(() => {
-        this.savePaper(false)
+        this.savePaper(true)
       }, 15_000)
     }
 
@@ -75,6 +69,7 @@ export default class MdText extends Vue {
     }
     document.addEventListener("keydown", this.toggleViews)
   }
+
   beforeDestroy() {
     if (autosaveIntervalId !== null) {
       clearInterval(autosaveIntervalId)
@@ -83,6 +78,11 @@ export default class MdText extends Vue {
     document.onpaste = null
     document.removeEventListener("keydown", this.toggleViews)
   }
+
+  @Watch("paper") onPaperChanged(newPaper: PaperData, oldPaper: PaperData) {
+    this.text = newPaper.abstract
+  }
+
   toggleViews(e: KeyboardEvent) {
     if (e.ctrlKey && e.key === "[") {
       this.textVisible = !this.textVisible
@@ -90,13 +90,13 @@ export default class MdText extends Vue {
       this.renderVisible = !this.renderVisible
     }
   }
-  async savePaper(showSaving=true) {
-    if (showSaving) {
+  async savePaper(autosave: boolean) {
+    if (!autosave) {
       this.$emit("saveStart")
     }
     this.paper.abstract = this.text
     await DB.papers.put(this.paper)
-    if (showSaving) {
+    if (!autosave) {
       // Saving is actually very fast, but I want the user to see something indicating
       // the paper was saved, so delay a little to make the progress circle visible.
       setTimeout(() => {
