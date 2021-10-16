@@ -12,6 +12,7 @@ export class PaperData {
   authors: string[] = []
   lastSyncTime = -1 // never synced to dropbox
   lastModifiedTime = Date.now()
+  iv?: Uint8Array
 }
 // keys are paper.id
 export type CachedPaperData = {

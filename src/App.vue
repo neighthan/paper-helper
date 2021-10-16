@@ -3,8 +3,6 @@
     <v-app>
       <NavDrawer/>
       <router-view />
-      <v-footer app>
-      </v-footer>
     </v-app>
   </div>
 </template>

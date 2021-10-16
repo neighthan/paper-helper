@@ -23,6 +23,7 @@ import {genId} from "../utils"
 import {clearImgCache, getMarkdownForImg} from "../markdown"
 import {loadMathjax} from "../mathjax"
 import { PaperData } from "@/paper_types"
+import { encrypt, cipherBufferToString } from "@/crypto"
 
 const autosave = true
 let autosaveIntervalId: number | null = null
@@ -32,6 +33,7 @@ loadMathjax(1000)
 @Component({components: {NavIcon, Markdown}})
 export default class MdText extends Vue {
   @Prop() private paper!: PaperData
+  @Prop() private password!: string | null
   text = ""
   textVisible = true
   renderVisible = true
@@ -94,7 +96,17 @@ export default class MdText extends Vue {
     if (!autosave) {
       this.$emit("saveStart")
     }
-    this.paper.abstract = this.text
+    if (this.paper.iv !== undefined) {
+      if (this.password === null) {
+        console.log("Can't save paper; iv is defined but no password.")
+        return
+      }
+      const {iv, ciphertext} = await encrypt(this.text, this.password)
+      this.paper.iv = iv
+      this.paper.abstract = cipherBufferToString(ciphertext)
+    } else {
+      this.paper.abstract = this.text
+    }
     await DB.papers.put(this.paper)
     if (!autosave) {
       // Saving is actually very fast, but I want the user to see something indicating

@@ -9,10 +9,11 @@
       <v-btn v-else icon @click.native.stop="savePaper">
         <v-icon>save</v-icon>
       </v-btn>
+      <v-btn icon @click="encryptAbstract"><v-icon>lock</v-icon></v-btn>
     </v-app-bar>
     <v-main>
       <v-container fluid>
-        <MdText :paper="paper" @saveStart="saving = true" @saveEnd="saving = false"/>
+        <MdText :paper="paper" :password="password" @saveStart="saving = true" @saveEnd="saving = false"/>
       </v-container>
     </v-main>
   </div>
@@ -25,12 +26,14 @@ import Markdown from "@/components/Markdown.vue"
 import MdText from "@/components/MdText.vue"
 import {DB} from "../db"
 import { PaperData } from "@/paper_types"
+import { decrypt, stringToCipherBuffer } from "@/crypto"
 
 @Component({components: {NavIcon, Markdown, MdText}})
 export default class Notes extends Vue {
   paperId = this.$route.params["paperId"]
   paper = new PaperData() // filler until you get the real paper
   saving = false
+  password: string | null = null
 
   async created() {
     const paper = await DB.papers.get(this.paperId)
@@ -38,7 +41,31 @@ export default class Notes extends Vue {
       console.log(`Couldn't find paper with id ${this.paperId}!`)
       return
     }
+
+    if (paper.iv !== undefined) {
+      const password = prompt("Enter password")
+      this.password = password
+      if (this.password === null) return
+      console.log("decoding")
+      const decoded = await decrypt(stringToCipherBuffer(paper.abstract), paper.iv, this.password)
+      if (decoded !== null) {
+        paper.abstract = decoded
+      } else {
+        // couldn't decode, so password was wrong. Set to null so MdText can't save
+        // any changes.
+        this.password = null
+      }
+      console.log("decoded")
+    }
     this.paper = paper
+  }
+
+  async encryptAbstract() {
+    // don't encrypt the abstract here; we keep it unencrypted for easy editing and
+    // encrypt on save in MdText, so we just need to give MdText the password and
+    // set paper.iv so it knows the paper should be encrypted
+    this.password = prompt("Enter password")!
+    this.paper.iv = crypto.getRandomValues(new Uint8Array(12))
   }
 }
 </script>

@@ -5,4 +5,7 @@ module.exports = {
       skipWaiting: true,
     },
   },
+  devServer: {
+    https: true, // so we can use crypto.subtle
+  },
 };
