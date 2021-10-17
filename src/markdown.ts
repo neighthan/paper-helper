@@ -1,8 +1,20 @@
+import hljs from "highlight.js"
 import MarkdownIt from "markdown-it"
 import MdFootnotes from "markdown-it-footnote"
 import {DB} from "./db"
 
-const MdRenderer = new MarkdownIt({html: true, breaks: true})
+const MdRenderer = new MarkdownIt({
+  html: true,
+  breaks: true,
+  highlight: (str, lang) => {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return hljs.highlight(str, {language: lang}).value
+      } catch {}
+    }
+    return ""
+  }
+})
 MdRenderer.use(MdFootnotes)
 let imgCache: {[key: string]: string} = {}
 

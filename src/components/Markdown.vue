@@ -25,7 +25,11 @@ export default class Markdown extends Vue {
 </script>
 
 <style lang="scss">
+@import "../../node_modules/highlight.js/styles/default.css";
+
 // css copied from https://markdown-it.github.io/
+// todo: see if this is available in node_modules so we don't need to
+// copy-paste it
 // todo: add table
 
 #renderedMd {
