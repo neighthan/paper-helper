@@ -19,14 +19,11 @@ async function decrypt(ciphertext: ArrayBuffer, iv: Uint8Array, password: string
   const alg = { name: 'AES-GCM', iv: iv }
   const key = await crypto.subtle.importKey('raw', pwHash, alg, false, ['decrypt'])
 
-  console.log("decrypting")
   let plaintext = null;
   try {
     const ptBuffer = await crypto.subtle.decrypt(alg, key, ciphertext)
     plaintext = new TextDecoder().decode(ptBuffer)
-  } catch {
-  }
-  console.log("decrypted")
+  } catch {}
   return plaintext
 }
 

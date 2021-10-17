@@ -46,7 +46,6 @@ export default class Notes extends Vue {
       const password = prompt("Enter password")
       this.password = password
       if (this.password === null) return
-      console.log("decoding")
       const decoded = await decrypt(stringToCipherBuffer(paper.abstract), paper.iv, this.password)
       if (decoded !== null) {
         paper.abstract = decoded
@@ -55,7 +54,6 @@ export default class Notes extends Vue {
         // any changes.
         this.password = null
       }
-      console.log("decoded")
     }
     this.paper = paper
   }
