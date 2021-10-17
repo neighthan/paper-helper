@@ -72,6 +72,10 @@ export default class MdText extends Vue {
     document.addEventListener("keydown", this.toggleViews)
   }
 
+  mounted() {
+    document.documentElement.classList.add("overflow-hidden")
+  }
+
   beforeDestroy() {
     if (autosaveIntervalId !== null) {
       clearInterval(autosaveIntervalId)
@@ -79,6 +83,7 @@ export default class MdText extends Vue {
     // clearImgCache()
     document.onpaste = null
     document.removeEventListener("keydown", this.toggleViews)
+    document.documentElement.classList.remove("overflow-hidden")
   }
 
   @Watch("paper") onPaperChanged(newPaper: PaperData, oldPaper: PaperData) {
@@ -153,7 +158,7 @@ export default class MdText extends Vue {
 </script>
 
 <style lang="scss">
-html {
+.overflow-hidden {
   overflow-y: hidden;
 }
 // using #mdText doesn't work because there's padding on one of the parent divs
