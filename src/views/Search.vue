@@ -21,7 +21,9 @@
           </v-col>
 
           <v-col cols="3" v-if="$vuetify.breakpoint.smAndUp">
-            <v-text-field label="Tags" v-model="query_tags" append-icon="search" hide-details></v-text-field>
+            <v-text-field label="Tags" v-model="query_tags" append-icon="search" hide-details
+              @keydown.enter="openFirst"
+            ></v-text-field>
           </v-col>
 
           <v-spacer></v-spacer>
