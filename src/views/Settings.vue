@@ -45,6 +45,16 @@
           </v-card>
 
           <v-card>
+            <SimpleDialog
+              title="Delete Database"
+              iconName="mdi-database-remove"
+              :fieldNames="['Type DELETE to confirm.']"
+              :confirmBtnText="'Confirm'"
+              @save="deleteDb"
+            />
+          </v-card>
+
+          <v-card>
             <v-card-title>Keyboard Shortcuts</v-card-title>
             <v-card-text>
               <kbd>ctrl+h</kbd> go to home<br>
@@ -68,8 +78,9 @@ import {DB} from "../db"
 import { PaperData } from "@/paper_types"
 import getAllSavedPosts from "@/reddit"
 import RedditInfoDialog from "@/components/RedditInfoDialog.vue"
+import SimpleDialog from "@/components/SimpleDialog.vue"
 
-@Component({components: {NavIcon, RedditInfoDialog}})
+@Component({components: {NavIcon, RedditInfoDialog, SimpleDialog}})
 export default class Settings extends Vue {
   oldTag = ""
   newTag = ""
@@ -126,6 +137,17 @@ export default class Settings extends Vue {
     this.newTag = ""
     this.snackbarColor = "black"
     this.showSnackbar = true
+  }
+  async deleteDb(confirmation: {[key: string]: string}) {
+    const confirmStr = Object.values(confirmation)[0]
+    if (confirmStr === "DELETE") {
+      console.log("Deleting database.")
+      await DB.delete()
+      // if you don't reload, you can't access DB anymore.
+      window.location.reload()
+    } else {
+      console.log(`Deletion not confirmed; got ${confirmStr}.`)
+    }
   }
   addFromReddit() {
     this.getPasswordDialog = false
