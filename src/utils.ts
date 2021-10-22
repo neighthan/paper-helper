@@ -58,3 +58,43 @@ export async function getDataFromYouTube(url: string) {
   data.abstract = `Duration ${duration}${thumbnailMd}\n\n${videoData.snippet.description}`
   return data
 }
+
+/**
+ * Merge two strings by adding all lines from `modifiedText` which aren't in `mainText`
+ * to `mainText`.
+ * Each line from `modifiedText` has `prefix` prepended to it.
+ */
+export function mergeTexts(mainText: string, modifiedText: string, prefix: string="") {
+  let merged: string[] = []
+  let lines1 = mainText.split("\n")
+  let lines2 = modifiedText.split("\n")
+  while (lines1.length || lines2.length) {
+    if (!lines1.length) {
+      for (const line of lines2) {
+        merged.push(prefix + line)
+      }
+      break
+    }
+    if (!lines2.length) {
+      merged.push(...lines1)
+      break
+    }
+
+    const line1 = lines1[0]
+    const line2 = lines2[0]
+    if (line1 === line2) {
+      merged.push(line1)
+      lines1.shift()
+      lines2.shift()
+    } else {
+      if (lines2.includes(line1)) {
+        merged.push(prefix + line2)
+        lines2.shift()
+      } else {
+        merged.push(line1)
+        lines1.shift()
+      }
+    }
+  }
+  return merged.join("\n")
+}

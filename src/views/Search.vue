@@ -120,7 +120,7 @@ import {exportDB, importInto} from "dexie-export-import"
 import { CachedPaperData, PaperData, PaperTempData } from "@/paper_types"
 import { Dropbox } from 'dropbox'
 import {DB, PapersDb, Meta, getMeta, SavedQuery} from "../db"
-import {genId, getPaperFromArxiv, getDataFromYouTube} from "../utils"
+import {genId, getPaperFromArxiv, getDataFromYouTube, mergeTexts} from "../utils"
 
 const DROPBOX_PATH = "/paper-helper-db.json"
 
@@ -352,17 +352,9 @@ export default class Home extends Vue {
           newerPaper = localPaper
           olderPaper = dbxPaper
         }
-        const newPaperLines = new Set(newerPaper.abstract.split("\n"))
-        const addLines = []
-        for (let line of olderPaper.abstract.split("\n")) {
-          if (line && !newPaperLines.has(line)) {
-            addLines.push(line)
-          }
-        }
-
-        if (addLines.length) {
+        if (olderPaper.abstract !== newerPaper.abstract) {
           newerPaper.tags.push("merge-conflict")
-          newerPaper.abstract += `\n\n---\n# Merge conflict lines\n${addLines.join("\n")}`
+          newerPaper.abstract = mergeTexts(newerPaper.abstract, olderPaper.abstract, "!~")
         }
 
         newerPaper.lastModifiedTime = Date.now()
