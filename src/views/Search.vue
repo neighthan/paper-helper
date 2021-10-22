@@ -297,37 +297,52 @@ export default class Home extends Vue {
       const papers = await DB.papers.toArray()
       for (let paper of papers) {
         localPapers.set(paper.id, paper)
+        // if a paper has never been synced to dbx, lastSyncTime is -1, so
+        // lastModifiedTime will be greater
         if (paper.lastModifiedTime > paper.lastSyncTime) {
           localIdsModified.push(paper.id)
         } else {
           localIdsNotModified.push(paper.id)
         }
       }
+      // these papers were synced to dbx but are missing from it now, so they must have
+      // been deleted by another device. Since they haven't been modified locally,
+      // just sync the deletion.
       const localOnlyIdsNotModified = localIdsNotModified.filter(id => !dbxPapers.has(id))
 
       const mergeIds: string[] = []
       const addPapers: PaperData[] = []
-      for (let [id, paper] of dbxPapers) {
+      const mergedPapers: PaperData[] = []
+      for (let [id, dbxPaper] of dbxPapers) {
         if (localPapers.has(id)) {
-          mergeIds.push(id)
+          const localPaper = localPapers.get(id)!
+          if (localPaper.lastSyncTime == localPaper.lastModifiedTime) {
+            // local hasn't been modified, so keep dbx version, if different
+            if (dbxPaper.lastSyncTime > localPaper.lastSyncTime) {
+              mergedPapers.push(dbxPaper)
+            }
+          } else if (dbxPaper.lastSyncTime == localPaper.lastSyncTime) {
+            // dbx hasn't been modified, so keep local (by doing nothing)
+          } else {
+            // local and dbx have both been modified
+            mergeIds.push(dbxPaper.id)
+          }
         } else { // dbx only; add to local if not deleted (and not modified since)
           if (deletedEntries.has(id)) {
             const lastSyncTime = deletedEntries.get(id)
-            if (lastSyncTime === undefined || paper.lastModifiedTime > lastSyncTime) {
-              addPapers.push(paper)
+            if (lastSyncTime === undefined || dbxPaper.lastModifiedTime > lastSyncTime) {
+              addPapers.push(dbxPaper)
             }
           } else {
-            addPapers.push(paper)
+            addPapers.push(dbxPaper)
           }
         }
       }
 
-      const mergedPapers: PaperData[] = []
       for (let id of mergeIds) {
         const dbxPaper = dbxPapers.get(id)
         const localPaper = localPapers.get(id)
         if (dbxPaper === undefined || localPaper === undefined) continue
-        if (dbxPaper.lastSyncTime === localPaper.lastSyncTime) continue
         let newerPaper: PaperData
         let olderPaper: PaperData
         if (dbxPaper.lastModifiedTime > localPaper.lastModifiedTime) {
@@ -346,10 +361,10 @@ export default class Home extends Vue {
         }
 
         if (addLines.length) {
+          newerPaper.tags.push("merge-conflict")
           newerPaper.abstract += `\n\n---\n# Merge conflict lines\n${addLines.join("\n")}`
         }
 
-        newerPaper.tags.push("merge-conflict")
         newerPaper.lastModifiedTime = Date.now()
         mergedPapers.push(newerPaper)
       }
