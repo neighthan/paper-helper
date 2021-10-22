@@ -115,7 +115,7 @@ export default class Settings extends Vue {
       return
     }
     meta.tags.splice(idx, 1)
-    if (!meta.tags.includes(this.newTag)) {
+    if (this.newTag && !meta.tags.includes(this.newTag)) {
       meta.tags.push(this.newTag)
     }
     meta._updateDb()
@@ -123,7 +123,7 @@ export default class Settings extends Vue {
     const modifiedPapers: PaperData[] = []
     for (let paper of papers) {
       if (paper.tags.includes(this.oldTag)) {
-        if (paper.tags.includes(this.newTag)) {
+        if (paper.tags.includes(this.newTag) || !this.newTag) {
           paper.tags.splice(paper.tags.indexOf(this.oldTag), 1)
         } else {
           paper.tags[paper.tags.indexOf(this.oldTag)] = this.newTag
