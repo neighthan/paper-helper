@@ -68,7 +68,13 @@ export default class Home extends Vue {
     this.savedQueries = Object.fromEntries(queries.map(q => [q.id, q]))
     if (Object.keys(this.savedQueries).length === 0) {
       let query: SavedQuery = {
-        name: "All", tags: [], searchString: "", id: genId(), timeAdded: Date.now()
+        name: "All",
+        tags: [],
+        searchString: "",
+        id: genId(),
+        timeAdded: Date.now(),
+        lastSyncTime: -1,
+        lastModifiedTime: +new Date(),
       }
       DB.savedQueries.put(query)
       Vue.set(this.savedQueries, query.id, query)
