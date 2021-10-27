@@ -1,4 +1,5 @@
 import Dexie from "dexie"
+import {exportDB as _exportDB} from "dexie-export-import"
 import {PaperData} from "@/paper_types"
 
 class Meta {
@@ -85,6 +86,8 @@ type SavedQuery = {
   searchString: string,
   tags: string[],
   timeAdded: number,
+  lastSyncTime: number,
+  lastModifiedTime: number,
 }
 
 type DeletedEntry = {
@@ -149,5 +152,13 @@ async function getMeta(db: PapersDb) {
   return meta
 }
 
+async function exportDB(db: PapersDb) {
+  const exportTables = ["papers", "savedQueries"]
+  return await _exportDB(
+    db,
+    {prettyJson: true, filter: (table, value, key) => exportTables.includes(table)}
+  )
+}
+
 const DB = new PapersDb("paper-helper")
-export {DB, getMeta, PapersDb, Meta, SavedQuery}
+export {DB, getMeta, PapersDb, Meta, SavedQuery, exportDB, DeletedEntry}

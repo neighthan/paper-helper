@@ -116,10 +116,11 @@ import { Component, Vue, Watch } from "vue-property-decorator";
 import PaperDialog from "@/components/PaperDialog.vue"
 import ExpansionItem from "@/components/ExpansionItem.vue"
 import NavIcon from "@/components/NavIcon.vue"
-import {exportDB, importInto} from "dexie-export-import"
+import {importInto} from "dexie-export-import"
 import { CachedPaperData, PaperData, PaperTempData } from "@/paper_types"
 import { Dropbox } from 'dropbox'
-import {DB, PapersDb, Meta, getMeta, SavedQuery} from "../db"
+import {DB, PapersDb, Meta, getMeta, exportDB} from "../db"
+import {updateDBFromDropbox} from "../dbx"
 import {genId, getPaperFromArxiv, getDataFromYouTube, mergeTexts} from "../utils"
 
 const DROPBOX_PATH = "/paper-helper-db.json"
@@ -205,7 +206,7 @@ export default class Home extends Vue {
   }
   async download_data() {
     try {
-      const jsonBlob = await exportDB(DB, {prettyJson: true})
+      const jsonBlob = await exportDB(DB)
       const date = new Date().toLocaleDateString().replace(/\//g, "_")
       const mime_type = "text/json"
       const a = document.createElement("a")
@@ -279,102 +280,21 @@ export default class Home extends Vue {
       let dbxJsonBlob = (<Blob> (<any> response.result).fileBlob)
       const json = JSON.parse(await dbxJsonBlob.text())
       const tables = json.data.data
-      const deletedEntries: Map<string, number> = new Map()
-      for (let deletedEntry of await DB.deletedEntries.toArray()) {
-        deletedEntries.set(deletedEntry.id, deletedEntry.lastSyncTime)
-      }
-      const dbxPapers: Map<string, PaperData> = new Map()
-      for (let table of tables) {
-        if (table.tableName !== "papers") continue
-        for (let paper of <PaperData[]> table.rows) {
-          dbxPapers.set(paper.id, paper)
+
+      const paperMergeCallback = (newerDatum: PaperData, olderDatum: PaperData) => {
+        if (olderDatum.abstract !== newerDatum.abstract) {
+          newerDatum.tags.push("merge-conflict")
+          newerDatum.abstract = mergeTexts(newerDatum.abstract, olderDatum.abstract, "!~")
+          newerDatum.lastModifiedTime = Date.now()
         }
       }
-
-      const localPapers: Map<string, PaperData> = new Map()
-      const localIdsModified: string[] = []
-      const localIdsNotModified: string[] = []
-      const papers = await DB.papers.toArray()
-      for (let paper of papers) {
-        localPapers.set(paper.id, paper)
-        // if a paper has never been synced to dbx, lastSyncTime is -1, so
-        // lastModifiedTime will be greater
-        if (paper.lastModifiedTime > paper.lastSyncTime) {
-          localIdsModified.push(paper.id)
-        } else {
-          localIdsNotModified.push(paper.id)
-        }
-      }
-      // these papers were synced to dbx but are missing from it now, so they must have
-      // been deleted by another device. Since they haven't been modified locally,
-      // just sync the deletion.
-      const localOnlyIdsNotModified = localIdsNotModified.filter(id => !dbxPapers.has(id))
-
-      const mergeIds: string[] = []
-      const addPapers: PaperData[] = []
-      const mergedPapers: PaperData[] = []
-      for (let [id, dbxPaper] of dbxPapers) {
-        if (localPapers.has(id)) {
-          const localPaper = localPapers.get(id)!
-          if (localPaper.lastSyncTime == localPaper.lastModifiedTime) {
-            // local hasn't been modified, so keep dbx version, if different
-            if (dbxPaper.lastSyncTime > localPaper.lastSyncTime) {
-              mergedPapers.push(dbxPaper)
-            }
-          } else if (dbxPaper.lastSyncTime == localPaper.lastSyncTime) {
-            // dbx hasn't been modified, so keep local (by doing nothing)
-          } else {
-            // local and dbx have both been modified
-            mergeIds.push(dbxPaper.id)
-          }
-        } else { // dbx only; add to local if not deleted (and not modified since)
-          if (deletedEntries.has(id)) {
-            const lastSyncTime = deletedEntries.get(id)
-            if (lastSyncTime === undefined || dbxPaper.lastModifiedTime > lastSyncTime) {
-              addPapers.push(dbxPaper)
-            }
-          } else {
-            addPapers.push(dbxPaper)
-          }
-        }
-      }
-
-      for (let id of mergeIds) {
-        const dbxPaper = dbxPapers.get(id)
-        const localPaper = localPapers.get(id)
-        if (dbxPaper === undefined || localPaper === undefined) continue
-        let newerPaper: PaperData
-        let olderPaper: PaperData
-        if (dbxPaper.lastModifiedTime > localPaper.lastModifiedTime) {
-          newerPaper = dbxPaper
-          olderPaper = localPaper
-        } else {
-          newerPaper = localPaper
-          olderPaper = dbxPaper
-        }
-        if (olderPaper.abstract !== newerPaper.abstract) {
-          newerPaper.tags.push("merge-conflict")
-          newerPaper.abstract = mergeTexts(newerPaper.abstract, olderPaper.abstract, "!~")
-        }
-
-        newerPaper.lastModifiedTime = Date.now()
-        mergedPapers.push(newerPaper)
-      }
-
-      await Promise.all([
-        DB.papers.bulkDelete(localOnlyIdsNotModified),
-        DB.papers.bulkAdd(addPapers),
-        DB.papers.bulkPut(mergedPapers),
-        DB.deletedEntries.clear(),
-      ])
-
-      const nDeleted = localOnlyIdsNotModified.length
-      const nAdded = addPapers.length
-      const nMerged = mergedPapers.length
-      this.dbxSnackbarMsg = `# Added: ${nAdded}; # Deleted: ${nDeleted}; # Merged: ${nMerged}`
+      // TODO: when snackbar goes away, show a new snackbar with this message
+      const querySnackbarMsg = await updateDBFromDropbox(tables, DB.savedQueries)
+      this.dbxSnackbarMsg = await updateDBFromDropbox(tables, DB.papers, paperMergeCallback)
       this.showDbxSnackbar = true
 
-      this._dbUpload()
+      await this._dbUpload()
+      await DB.deletedEntries.clear()
     } catch (error) {
       console.error("No file found.")
       console.error(error)
@@ -386,7 +306,7 @@ export default class Home extends Vue {
     await DB.papers.toCollection().modify(paper => {
       paper.lastSyncTime = syncTime
     })
-    const jsonBlob = await exportDB(DB, {prettyJson: true})
+    const jsonBlob = await exportDB(DB)
     const jsonStr = await jsonBlob.text()
     const dbx = new Dropbox({accessToken: this.meta.dropboxToken})
     dbx.filesUpload({
@@ -410,6 +330,8 @@ export default class Home extends Vue {
         searchString: "",
         tags: ["merge-conflict"],
         timeAdded: Date.now(),
+        lastSyncTime: -1,
+        lastModifiedTime: +new Date(),
       }
       await DB.savedQueries.put(query)
     }

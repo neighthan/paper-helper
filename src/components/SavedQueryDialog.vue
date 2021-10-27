@@ -28,7 +28,7 @@ import { Component, Prop, Vue, Watch } from "vue-property-decorator"
 import {SavedQuery} from "@/db"
 
 @Component
-export default class PaperDialog extends Vue {
+export default class SavedQueryDialog extends Vue {
   @Prop() private initialData!: SavedQuery | null
   @Prop() private allTags!: string[]
   id = "" // id of query being updated
@@ -36,6 +36,7 @@ export default class PaperDialog extends Vue {
   searchString = ""
   tags: string[] = []
   timeAdded = -1
+  lastSyncTime = -1
 
   created() {
     if (this.initialData) {
@@ -49,6 +50,7 @@ export default class PaperDialog extends Vue {
     this.searchString = query.searchString
     this.tags = query.tags // TODO: need to copy?
     this.timeAdded = query.timeAdded
+    this.lastSyncTime = query.lastSyncTime
   }
 
   resetFields() {
@@ -66,13 +68,15 @@ export default class PaperDialog extends Vue {
     }
   }
 
-  get editedQuery() {
+  get editedQuery(): SavedQuery {
     return {
       id: this.id,
       name: this.name,
       searchString: this.searchString,
       tags: this.tags.map(tag => tag.trim()),
       timeAdded: this.timeAdded,
+      lastSyncTime: this.lastSyncTime,
+      lastModifiedTime: Date.now(),
     }
   }
 
