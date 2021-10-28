@@ -43,8 +43,7 @@ export default class Notes extends Vue {
     }
 
     if (paper.iv !== undefined) {
-      const password = prompt("Enter password")
-      this.password = password
+      this.password = prompt("Enter the password to decrypt this entry.")
       if (this.password === null) return
       const decoded = await decrypt(stringToCipherBuffer(paper.abstract), paper.iv, this.password)
       if (decoded !== null) {
@@ -62,7 +61,15 @@ export default class Notes extends Vue {
     // don't encrypt the abstract here; we keep it unencrypted for easy editing and
     // encrypt on save in MdText, so we just need to give MdText the password and
     // set paper.iv so it knows the paper should be encrypted
-    this.password = prompt("Enter password")!
+    let password: string | null = null
+    let repeatPassword: string | null = ""
+    while (password !== repeatPassword) {
+      password = prompt("Please enter a password to encrypt this entry.")
+      if (password === null) return
+      repeatPassword = prompt("Please repeat the password.")
+      if (repeatPassword === null) return
+    }
+    this.password = password
     this.paper.iv = crypto.getRandomValues(new Uint8Array(12))
   }
 }
