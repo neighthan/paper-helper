@@ -58,6 +58,10 @@ export default class Notes extends Vue {
   }
 
   async encryptAbstract() {
+    if (this.paper.iv !== undefined) {
+      alert("This entry is already encrypted.")
+      return
+    }
     // don't encrypt the abstract here; we keep it unencrypted for easy editing and
     // encrypt on save in MdText, so we just need to give MdText the password and
     // set paper.iv so it knows the paper should be encrypted

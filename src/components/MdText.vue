@@ -86,8 +86,16 @@ export default class MdText extends Vue {
     document.documentElement.classList.remove("overflow-hidden")
   }
 
-  @Watch("paper") onPaperChanged(newPaper: PaperData, oldPaper: PaperData) {
+  @Watch("paper")
+  onPaperChanged(newPaper: PaperData, oldPaper: PaperData) {
     this.text = newPaper.abstract
+  }
+  @Watch("password")
+  onPasswordChanged(newPassword: string | null, oldPassword: string | null) {
+    if (newPassword !== null) {
+      this.password = newPassword
+      this.savePaper(false)
+    }
   }
 
   toggleViews(e: KeyboardEvent) {
