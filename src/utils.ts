@@ -49,7 +49,7 @@ export async function getDataFromYouTube(url: string) {
   data.title = videoData.snippet.title
   data.authors.push(videoData.snippet.channelTitle)
   data.date = videoData.snippet.publishedAt.split("T")[0]
-  data.tags = videoData.snippet.tags
+  data.tags = videoData.snippet.tags ?? []
   data.tags.push("watch")
   const duration = videoData.contentDetails.duration.replace("PT", "")
   const thumbnail = videoData.snippet.thumbnails.standard
