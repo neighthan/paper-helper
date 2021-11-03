@@ -11,6 +11,8 @@ class Meta {
   _redditClientId: string
   _redditClientSecret: string
   _redditUsername: string
+  _lastSyncTime: number
+  _syncTimeThreshHours: number
 
   constructor(
     id = 0,
@@ -21,6 +23,8 @@ class Meta {
     redditClientId = "",
     redditClientSecret = "",
     redditUsername = "",
+    lastSyncTime = -1,
+    syncTimeThreshHours = 24,
   ) {
     this.id = id
     this._n_papers_since_backup = n_papers_since_backup
@@ -30,6 +34,8 @@ class Meta {
     this._redditClientId = redditClientId
     this._redditClientSecret = redditClientSecret
     this._redditUsername = redditUsername
+    this._lastSyncTime = lastSyncTime
+    this._syncTimeThreshHours = syncTimeThreshHours
   }
 
   // dexie didn't like using a getter for id, but we don't want a setter anyway, so
@@ -51,6 +57,12 @@ class Meta {
       username: this._redditUsername,
     }
   }
+  get lastSyncTime() {
+    return this._lastSyncTime
+  }
+  get syncTimeThreshHours() {
+    return this._syncTimeThreshHours
+  }
   set n_papers_since_backup(n_papers_since_backup) {
     this._n_papers_since_backup = n_papers_since_backup
     this._updateDb()
@@ -68,6 +80,14 @@ class Meta {
     this._redditClientId = data.clientId
     this._redditClientSecret = data.clientSecret
     this._redditUsername = data.username
+    this._updateDb()
+  }
+  set lastSyncTime(lastSyncTime: number) {
+    this._lastSyncTime = lastSyncTime
+    this._updateDb()
+  }
+  set syncTimeThreshHours(syncTimeThreshHours: number) {
+    this._syncTimeThreshHours = syncTimeThreshHours
     this._updateDb()
   }
   _updateDb() {

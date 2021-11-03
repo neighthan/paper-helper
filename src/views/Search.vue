@@ -148,9 +148,13 @@ export default class Home extends Vue {
   showDbxSnackbar = false
   dbxSnackbarMsg = ""
 
-  created() {
-    loadFromDB(this, DB, this.queryId)
+  async created() {
     this.editingPaper = this.makeDefaultPaper()
+    await loadFromDB(this, DB, this.queryId)
+    const syncThreshMs = this.meta.syncTimeThreshHours * 3600 * 1000
+    if (Date.now() - this.meta.lastSyncTime > syncThreshMs) {
+      this.sync_dropbox()
+    }
   }
   delete_pd(paper: PaperData) {
     this.deleted_pd = paper
@@ -314,6 +318,7 @@ export default class Home extends Vue {
       contents: new File([jsonStr], "db.json", {type: "application/json"}),
       mode: {".tag": "overwrite"},
     }).then((response) => {
+      this.meta.lastSyncTime = Date.now()
       console.log("Finished uploading.")
       console.log(response)
     }).catch((error) => {
