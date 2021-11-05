@@ -18,6 +18,7 @@ export default class App extends Vue {
   async created() {
     const logLevel = (await getMeta(DB)).logLevel
     logger.logLevel = logLevel
+    console.log(`Logging at level ${logLevel}.`)
   }
 
   mounted() {

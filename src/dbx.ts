@@ -1,7 +1,6 @@
 import {DeletedEntry} from "./db"
-import {PaperData} from "./paper_types"
-import {mergeTexts} from "./utils"
 import {DB} from "./db"
+import {logger} from "./logger"
 
 type HasId = {
   id: string
@@ -84,6 +83,8 @@ async function mergeData<T extends Syncable & HasId>(
         // dbx hasn't been modified, so keep local (by doing nothing)
       } else {
         // local and dbx have both been modified
+        logger.debug("Local:", localDatum)
+        logger.debug("Dbx:", dbxData)
         mergeIds.push(dbxDatum.id)
       }
     } else { // dbx only; add to local if not deleted (and not modified since)
