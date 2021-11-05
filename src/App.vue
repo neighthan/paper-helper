@@ -11,15 +11,13 @@
 import {Component, Vue} from "vue-property-decorator"
 import NavDrawer from "@/components/NavDrawer.vue"
 import {DB, getMeta} from "@/db"
-import {Logger, HasLogger} from "@/logger"
+import {logger} from "@/logger"
 
 @Component({components: {NavDrawer}})
-export default class App extends Vue implements HasLogger {
-  logger = new Logger()
-
+export default class App extends Vue {
   async created() {
     const logLevel = (await getMeta(DB)).logLevel
-    this.logger.logLevel = logLevel
+    logger.logLevel = logLevel
   }
 
   mounted() {

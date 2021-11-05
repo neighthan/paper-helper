@@ -1,5 +1,4 @@
 type LogLevel = "silent" | "error" | "warn" | "info" | "debug" | "trace"
-type HasLogger = {logger: Logger}
 
 
 // the higher the number, the more you're logging
@@ -29,34 +28,35 @@ class Logger {
     this._logLevel = logLevels[logLevel]
   }
 
-  error(msg: string) {
+  error(...data: any[]) {
     if (this._logLevel >= logLevels.error) {
-      this._log(msg)
+      this._log(...data)
     }
   }
-  warn(msg: string) {
+  warn(...data: any[]) {
     if (this._logLevel >= logLevels.warn) {
-      this._log(msg)
+      this._log(...data)
     }
   }
-  info(msg: string) {
+  info(...data: any[]) {
     if (this._logLevel >= logLevels.info) {
-      this._log(msg)
+      this._log(...data)
     }
   }
-  debug(msg: string) {
+  debug(...data: any[]) {
     if (this._logLevel >= logLevels.debug) {
-      this._log(msg)
+      this._log(...data)
     }
   }
-  trace(msg: string) {
+  trace(...data: any[]) {
     if (this._logLevel >= logLevels.trace) {
-      this._log(msg)
+      this._log(...data)
     }
   }
-  protected _log(msg: string) {
-    console.log(msg)
+  protected _log(...data: any[]) {
+    console.log(...data)
   }
 }
 
-export {Logger, LogLevel, HasLogger}
+const logger = new Logger()
+export {logger, Logger, LogLevel, HasLogger}
