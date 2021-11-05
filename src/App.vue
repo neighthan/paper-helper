@@ -10,9 +10,18 @@
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator"
 import NavDrawer from "@/components/NavDrawer.vue"
+import {DB, getMeta} from "@/db"
+import {Logger, HasLogger} from "@/logger"
 
 @Component({components: {NavDrawer}})
-export default class App extends Vue {
+export default class App extends Vue implements HasLogger {
+  logger = new Logger()
+
+  async created() {
+    const logLevel = (await getMeta(DB)).logLevel
+    this.logger.logLevel = logLevel
+  }
+
   mounted() {
     const vue = this
     function kbShortcuts(e: KeyboardEvent) {

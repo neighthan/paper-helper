@@ -1,18 +1,20 @@
 import Dexie from "dexie"
 import {exportDB as _exportDB} from "dexie-export-import"
 import {PaperData} from "@/paper_types"
+import {LogLevel} from "@/logger"
 
 class Meta {
   id: number
-  _n_papers_since_backup: number
-  _tags: string[]
-  _dropboxToken: string
-  _redditUserAgent: string
-  _redditClientId: string
-  _redditClientSecret: string
-  _redditUsername: string
-  _lastSyncTime: number
-  _syncTimeThreshHours: number
+  protected _n_papers_since_backup: number
+  protected _tags: string[]
+  protected _dropboxToken: string
+  protected _redditUserAgent: string
+  protected _redditClientId: string
+  protected _redditClientSecret: string
+  protected _redditUsername: string
+  protected _lastSyncTime: number
+  protected _syncTimeThreshHours: number
+  protected _logLevel: LogLevel
 
   constructor(
     id = 0,
@@ -25,6 +27,7 @@ class Meta {
     redditUsername = "",
     lastSyncTime = -1,
     syncTimeThreshHours = 24,
+    logLevel: LogLevel = "debug",
   ) {
     this.id = id
     this._n_papers_since_backup = n_papers_since_backup
@@ -36,6 +39,7 @@ class Meta {
     this._redditUsername = redditUsername
     this._lastSyncTime = lastSyncTime
     this._syncTimeThreshHours = syncTimeThreshHours
+    this._logLevel = logLevel
   }
 
   // dexie didn't like using a getter for id, but we don't want a setter anyway, so
@@ -63,6 +67,9 @@ class Meta {
   get syncTimeThreshHours() {
     return this._syncTimeThreshHours
   }
+  get logLevel() {
+    return this._logLevel
+  }
   set n_papers_since_backup(n_papers_since_backup) {
     this._n_papers_since_backup = n_papers_since_backup
     this._updateDb()
@@ -88,6 +95,10 @@ class Meta {
   }
   set syncTimeThreshHours(syncTimeThreshHours: number) {
     this._syncTimeThreshHours = syncTimeThreshHours
+    this._updateDb()
+  }
+  set logLevel(logLevel: LogLevel) {
+    this._logLevel = logLevel
     this._updateDb()
   }
   _updateDb() {
