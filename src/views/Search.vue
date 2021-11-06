@@ -309,10 +309,13 @@ export default class Home extends Vue {
     }
   }
   async _dbUpload() {
+    // only update the sync time for papers which have been modified
     const syncTime = Date.now()
     try {
-      await DB.papers.toCollection().modify({
-        lastSyncTime: syncTime
+      await DB.papers.toCollection().modify(paper => {
+        if (paper.lastModifiedTime > paper.lastSyncTime) {
+          paper.lastSyncTime = syncTime
+        }
       })
     } catch (error) {
       console.error(error)
