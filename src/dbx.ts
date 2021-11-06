@@ -84,7 +84,7 @@ async function mergeData<T extends Syncable & HasId>(
       } else {
         // local and dbx have both been modified
         logger.debug("Local:", localDatum)
-        logger.debug("Dbx:", dbxData)
+        logger.debug("Dbx:", dbxDatum)
         mergeIds.push(dbxDatum.id)
       }
     } else { // dbx only; add to local if not deleted (and not modified since)

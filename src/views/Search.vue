@@ -153,6 +153,7 @@ export default class Home extends Vue {
     await loadFromDB(this, DB, this.queryId)
     const syncThreshMs = this.meta.syncTimeThreshHours * 3600 * 1000
     if (Date.now() - this.meta.lastSyncTime > syncThreshMs) {
+      console.log("Autosyncing with dropbox.")
       this.sync_dropbox()
     }
   }
@@ -295,21 +296,27 @@ export default class Home extends Vue {
       // TODO: when snackbar goes away, show a new snackbar with this message
       const querySnackbarMsg = await updateDBFromDropbox(tables, DB.savedQueries)
       this.dbxSnackbarMsg = await updateDBFromDropbox(tables, DB.papers, paperMergeCallback)
-      this.showDbxSnackbar = true
 
       await this._dbUpload()
+      this.showDbxSnackbar = true
       await DB.deletedEntries.clear()
     } catch (error) {
       console.error("No file found.")
       console.error(error)
       this._dbUpload()
+      this.dbxSnackbarMsg = "No data found on Dropbox; uploaded local data."
+      this.showDbxSnackbar = true
     }
   }
   async _dbUpload() {
     const syncTime = Date.now()
-    await DB.papers.toCollection().modify(paper => {
-      paper.lastSyncTime = syncTime
-    })
+    try {
+      await DB.papers.toCollection().modify({
+        lastSyncTime: syncTime
+      })
+    } catch (error) {
+      console.error(error)
+    }
     const jsonBlob = await exportDB(DB)
     const jsonStr = await jsonBlob.text()
     const dbx = new Dropbox({accessToken: this.meta.dropboxToken})
