@@ -50,6 +50,7 @@ export default class PaperDialog extends Vue {
   authors = ""
   abstract = ""
   date = ""
+  lastSyncTime = -1
 
   created() {
     this.updateFields(this.initialData)
@@ -65,6 +66,7 @@ export default class PaperDialog extends Vue {
     this.authors = paper.authors.join(", ")
     this.timeAdded = paper.time_added
     this.date = paper.date
+    this.lastSyncTime = paper.lastSyncTime
   }
 
   @Watch("initialData")
@@ -83,7 +85,7 @@ export default class PaperDialog extends Vue {
       authors: this.authors.split(", "),
       time_added: this.timeAdded,
       date: this.date,
-      lastSyncTime: -1,
+      lastSyncTime: this.lastSyncTime,
       lastModifiedTime: Date.now(),
     }
     return paper
