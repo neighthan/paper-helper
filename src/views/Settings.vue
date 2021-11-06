@@ -21,6 +21,18 @@
           </v-card>
 
           <v-card>
+            <v-card-title>Log Level</v-card-title>
+            <v-card-text>
+              <v-select
+                label="Log Level"
+                v-model="logLevel"
+                :items="logLevels"
+                @input="updateLogLevel"
+              ></v-select>
+            </v-card-text>
+          </v-card>
+
+          <v-card>
             <v-card-title>Add Saved Reddit Posts</v-card-title>
             <v-card-actions>
               <v-dialog v-model="getPasswordDialog">
@@ -74,11 +86,14 @@
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
-import {DB} from "../db"
+import {DB, getMeta} from "../db"
 import { PaperData } from "@/paper_types"
 import getAllSavedPosts from "@/reddit"
 import RedditInfoDialog from "@/components/RedditInfoDialog.vue"
 import SimpleDialog from "@/components/SimpleDialog.vue"
+import {LogLevel, logLevels as _logLevels} from "@/logger"
+
+const logLevels = Object.keys(_logLevels)
 
 @Component({components: {NavIcon, RedditInfoDialog, SimpleDialog}})
 export default class Settings extends Vue {
@@ -90,6 +105,13 @@ export default class Settings extends Vue {
   getPasswordDialog = false
   password = ""
   snackbarColor = "black"
+  logLevel: LogLevel = "silent"
+  logLevels = logLevels
+
+  async created() {
+    const meta = await getMeta(DB)
+    this.logLevel = meta.logLevel
+  }
 
   /**
    * It's fine to rename to an existing tag; this just merges the tags.
@@ -148,6 +170,10 @@ export default class Settings extends Vue {
     } else {
       console.log(`Deletion not confirmed; got ${confirmStr}.`)
     }
+  }
+  async updateLogLevel() {
+    const meta = await getMeta(DB)
+    meta.logLevel = this.logLevel
   }
   addFromReddit() {
     this.getPasswordDialog = false
