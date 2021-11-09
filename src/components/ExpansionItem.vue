@@ -50,7 +50,7 @@
       </v-card>
     </v-expansion-panel-header>
     <v-expansion-panel-content>
-      <div class="abstract" v-html="mdAbstract" style="text-align: left">
+      <div class="abstract" v-html="mdAbstract" style="text-align: left; word-wrap: break-word">
       </div>
     </v-expansion-panel-content>
   </div>
