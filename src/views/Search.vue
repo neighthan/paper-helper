@@ -39,7 +39,7 @@
             <v-icon>search</v-icon>
           </v-btn>
 
-          <v-btn icon @click="openDialog">
+          <v-btn icon @click="showPaperDialog(makeDefaultPaper())">
             <v-icon>add</v-icon>
           </v-btn>
           <PaperDialog ref="paperDialog" :all_tags="meta.tags" @addPaper="addPaper"/>
@@ -91,7 +91,7 @@
           <v-expansion-panels accordion>
             <v-expansion-panel v-for="pd of filtered_paper_data" :key="pd.id">
               <ExpansionItem :pd="pd"
-                @edit_pd="edit_pd" @delete_pd="delete_pd" @updatePriority="updatePriority"
+                @edit_pd="showPaperDialog" @delete_pd="delete_pd" @updatePriority="updatePriority"
                 @addNotes="addNotes"
               />
             </v-expansion-panel>
@@ -119,7 +119,7 @@ import { CachedPaperData, PaperData, PaperTempData } from "@/paper_types"
 import { Dropbox } from 'dropbox'
 import {DB, PapersDb, Meta, getMeta, exportDB} from "../db"
 import {updateDBFromDropbox} from "../dbx"
-import {genId, getPaperFromArxiv, getDataFromYouTube, mergeTexts} from "../utils"
+import {getPaperFromArxiv, getDataFromYouTube, mergeTexts} from "../utils"
 
 const DROPBOX_PATH = "/paper-helper-db.json"
 
@@ -149,8 +149,8 @@ export default class Home extends Vue {
     await loadFromDB(this, DB, this.queryId)
     const syncThreshMs = this.meta.syncTimeThreshHours * 3600 * 1000
     if (Date.now() - this.meta.lastSyncTime > syncThreshMs) {
-      console.log("Autosyncing with dropbox.")
-      this.sync_dropbox()
+      console.log("Autosyncing with dropbox (if token is available).")
+      this.sync_dropbox(false)
     }
   }
   delete_pd(paper: PaperData) {
@@ -167,9 +167,6 @@ export default class Home extends Vue {
       DB.deletedEntries.delete(this.deleted_pd.id)
       Vue.set(this.cached_paper_data, this.deleted_pd.id, this.deleted_pd)
     }
-  }
-  edit_pd(paper: PaperData) {
-    ;(<PaperDialog> this.$refs.paperDialog).show(paper)
   }
   addNotes(paper: PaperData) {
     this.$router.push({path: `/notes/${paper.id}`})
@@ -201,7 +198,7 @@ export default class Home extends Vue {
     if (this.query_tags !== "") {
       data.tags.push(...this.query_tags.split(" "))
     }
-    ;(<PaperDialog> this.$refs.paperDialog).show(data)
+    this.showPaperDialog(data)
   }
   async download_data() {
     try {
@@ -252,9 +249,10 @@ export default class Home extends Vue {
     paper.priority = priority
     DB.papers.put(paper)
   }
-  async sync_dropbox() {
+  async sync_dropbox(promptForToken: boolean=true) {
     if (!this.meta.dropboxToken) {
       // TODO: make this nicer
+      if (!promptForToken) return
       let token =  prompt("Enter your dropbox token")
       if (!token) {
         return
@@ -335,8 +333,8 @@ export default class Home extends Vue {
     }
     this.$router.push({path: `/search/${query.id}`})
   }
-  openDialog() {
-    ;(<PaperDialog> this.$refs.paperDialog).show(this.makeDefaultPaper())
+  showPaperDialog(paper: PaperData) {
+    ;(<PaperDialog> this.$refs.paperDialog).show(paper)
   }
   makeDefaultPaper() {
     const paper = new PaperData()

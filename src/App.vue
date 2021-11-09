@@ -2,6 +2,7 @@
   <div id="app">
     <v-app>
       <NavDrawer/>
+      <PaperDialog ref="paperDialog"/>
       <router-view />
     </v-app>
   </div>
@@ -12,13 +13,19 @@ import {Component, Vue} from "vue-property-decorator"
 import NavDrawer from "@/components/NavDrawer.vue"
 import {DB, getMeta} from "@/db"
 import {logger} from "@/logger"
+import PaperDialog from "@/components/PaperDialog.vue"
+import {PaperData} from "@/paper_types"
 
-@Component({components: {NavDrawer}})
+@Component({components: {NavDrawer, PaperDialog}})
 export default class App extends Vue {
   async created() {
     const logLevel = (await getMeta(DB)).logLevel
     logger.logLevel = logLevel
     console.log(`Logging at level ${logLevel}.`)
+  }
+
+  openPaperDialog(paper: PaperData) {
+    ;(<PaperDialog> this.$refs.paperDialog).show(paper)
   }
 
   mounted() {
@@ -29,6 +36,8 @@ export default class App extends Vue {
         e.preventDefault() // open chrome history
       } else if (e.ctrlKey && e.key == "b") {
         vue.$root.$emit("toggleNav")
+      } else if (e.ctrlKey && e.altKey && e.key == "n") {
+        vue.openPaperDialog(new PaperData())
       }
     }
     document.addEventListener("keydown", kbShortcuts)

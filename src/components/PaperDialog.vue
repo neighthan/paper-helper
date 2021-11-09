@@ -2,7 +2,6 @@
   <v-dialog
     v-model="showDialog"
     persistent
-    id="new-paper-dialog"
     :fullscreen="$vuetify.breakpoint.xsOnly"
     @keydown.ctrl.s.prevent="save"
   >
