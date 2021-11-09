@@ -1,5 +1,11 @@
 <template>
-  <div id="new-paper-dialog" @keydown.ctrl.s.prevent="save">
+  <v-dialog
+    v-model="showDialog"
+    persistent
+    id="new-paper-dialog"
+    :fullscreen="$vuetify.breakpoint.xsOnly"
+    @keydown.ctrl.s.prevent="save"
+  >
     <v-card>
       <v-card-text>
         <v-text-field label="Title" v-model="title" dense autofocus></v-text-field>
@@ -30,16 +36,17 @@
         <v-spacer></v-spacer>
       </v-card-actions>
     </v-card>
-  </div>
+  </v-dialog>
 </template>
 
 <script lang="ts">
 import { Component, Prop, Vue, Watch } from "vue-property-decorator"
 import { PaperData } from "@/paper_types"
+import {genId} from "../utils"
+import {DB, getMeta} from "../db"
 
 @Component
 export default class PaperDialog extends Vue {
-  @Prop() private initialData!: PaperData
   @Prop() private all_tags!: string[]
   id = "" // id of paper being updated
   timeAdded = -1
@@ -51,15 +58,17 @@ export default class PaperDialog extends Vue {
   abstract = ""
   date = ""
   lastSyncTime = -1
+  showDialog = false
 
-  created() {
-    this.updateFields(this.initialData)
+  show(paper: PaperData) {
+    this.updateFields(paper)
+    this.showDialog = true
   }
 
   updateFields(paper: PaperData) {
     this.id = paper.id
     this.priority = paper.priority.toString()
-    this.tags = paper.tags // TODO: need to copy?
+    this.tags = [...paper.tags]
     this.title = paper.title
     this.url = paper.url
     this.abstract = paper.abstract
@@ -67,11 +76,6 @@ export default class PaperDialog extends Vue {
     this.timeAdded = paper.time_added
     this.date = paper.date
     this.lastSyncTime = paper.lastSyncTime
-  }
-
-  @Watch("initialData")
-  onPaperChanged(newPaper: PaperData, oldPaper: PaperData) {
-    this.updateFields(newPaper)
   }
 
   get editedPaper() {
@@ -90,14 +94,25 @@ export default class PaperDialog extends Vue {
     }
     return paper
   }
-  save() {
-    this.$emit("addPaper", true, this.editedPaper)
-  }
   cancel() {
-    this.$emit("addPaper", false, this.editedPaper)
+    this.showDialog = false
+    this.$emit("cancelled")
+  }
+  async save() {
+    this.showDialog = false
+    const paper = this.editedPaper
+    paper.lastModifiedTime = Date.now()
+    if (!paper.id) {
+      paper.time_added = Date.now()
+      paper.id = genId()
+    }
+    const meta = await getMeta(DB)
+    await DB.transaction("rw", DB.meta, DB.papers, async () => {
+      DB.papers.put(paper)
+      meta.tags = [...new Set(meta.tags.concat(paper.tags))]
+      meta.n_papers_since_backup += 1
+    })
+    this.$emit("addPaper", paper)
   }
 }
 </script>
-
-<style scoped lang="scss">
-</style>

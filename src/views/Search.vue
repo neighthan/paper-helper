@@ -42,9 +42,7 @@
           <v-btn icon @click="openDialog">
             <v-icon>add</v-icon>
           </v-btn>
-          <v-dialog v-model="dialog" persistent :fullscreen="$vuetify.breakpoint.xsOnly">
-            <PaperDialog :initialData="editingPaper" :all_tags="meta.tags" @addPaper="add_paper"/>
-          </v-dialog>
+          <PaperDialog ref="paperDialog" :all_tags="meta.tags" @addPaper="addPaper"/>
 
           <v-dialog v-model="addFromURLDialog">
             <template v-slot:activator="{on, attrs}">
@@ -138,7 +136,6 @@ export default class Home extends Vue {
   dialog = false
   addFromURLDialog = false
   addURL = ""
-  editingPaper: PaperData = new PaperData()
   meta: Meta = new Meta()
   queryId =  this.$route.params["queryId"]
   savedQueryTags: string[] = []
@@ -149,7 +146,6 @@ export default class Home extends Vue {
   dbxSnackbarMsg = ""
 
   async created() {
-    this.editingPaper = this.makeDefaultPaper()
     await loadFromDB(this, DB, this.queryId)
     const syncThreshMs = this.meta.syncTimeThreshHours * 3600 * 1000
     if (Date.now() - this.meta.lastSyncTime > syncThreshMs) {
@@ -173,8 +169,7 @@ export default class Home extends Vue {
     }
   }
   edit_pd(paper: PaperData) {
-    this.editingPaper = paper
-    this.dialog = true
+    ;(<PaperDialog> this.$refs.paperDialog).show(paper)
   }
   addNotes(paper: PaperData) {
     this.$router.push({path: `/notes/${paper.id}`})
@@ -206,8 +201,7 @@ export default class Home extends Vue {
     if (this.query_tags !== "") {
       data.tags.push(...this.query_tags.split(" "))
     }
-    this.editingPaper = data
-    this.dialog = true
+    ;(<PaperDialog> this.$refs.paperDialog).show(data)
   }
   async download_data() {
     try {
@@ -246,23 +240,12 @@ export default class Home extends Vue {
     await loadFromDB(this, DB, this.queryId)
     this.meta.n_papers_since_backup = this.n_papers_all_red
   }
-  async add_paper(save: boolean, paper: PaperData) {
-    paper.lastModifiedTime = Date.now()
-    this.dialog = false
-    if(save) {
-      if (!paper.id) {
-        paper.time_added = Date.now()
-        paper.id = genId()
-      }
-      await DB.papers.put(paper)
-      Vue.set(this.cached_paper_data, paper.id, paper)
-      this.paper_temp_data[paper.id] = {
-        search_string: `${paper.title.toLowerCase()} ${paper.abstract.toLowerCase()}`,
-        search_tags: getPrefixSet(paper.tags),
-        date_string: new Date(paper.date || paper.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
-      }
-      this.meta.tags = [...new Set(this.meta.tags.concat(paper.tags))]
-      this.meta.n_papers_since_backup += 1
+  async addPaper(paper: PaperData) {
+    Vue.set(this.cached_paper_data, paper.id, paper)
+    this.paper_temp_data[paper.id] = {
+      search_string: `${paper.title.toLowerCase()} ${paper.abstract.toLowerCase()}`,
+      search_tags: getPrefixSet(paper.tags),
+      date_string: new Date(paper.date || paper.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
     }
   }
   updatePriority(paper: PaperData, priority: number) {
@@ -353,8 +336,7 @@ export default class Home extends Vue {
     this.$router.push({path: `/search/${query.id}`})
   }
   openDialog() {
-    this.editingPaper = this.makeDefaultPaper()
-    this.dialog = true
+    ;(<PaperDialog> this.$refs.paperDialog).show(this.makeDefaultPaper())
   }
   makeDefaultPaper() {
     const paper = new PaperData()
