@@ -43,6 +43,7 @@ import { Component, Prop, Vue, Watch } from "vue-property-decorator"
 import { PaperData } from "@/paper_types"
 import {genId} from "../utils"
 import {DB, getMeta} from "../db"
+import {updatePaperTodos} from "@/todos"
 
 @Component
 export default class PaperDialog extends Vue {
@@ -108,6 +109,7 @@ export default class PaperDialog extends Vue {
     const meta = await getMeta(DB)
     await DB.transaction("rw", DB.meta, DB.papers, async () => {
       DB.papers.put(paper)
+      updatePaperTodos(paper)
       meta.tags = [...new Set(meta.tags.concat(paper.tags))]
       meta.n_papers_since_backup += 1
     })

@@ -1,4 +1,4 @@
-import {DB, getMeta, Meta} from "./db"
+import {DB, getMeta} from "./db"
 import snoowrap from "snoowrap"
 import {getPaperFromArxiv} from "@/utils"
 import { PaperData } from "@/paper_types"

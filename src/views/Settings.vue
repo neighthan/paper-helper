@@ -103,6 +103,7 @@ import getAllSavedPosts from "@/reddit"
 import RedditInfoDialog from "@/components/RedditInfoDialog.vue"
 import SimpleDialog from "@/components/SimpleDialog.vue"
 import {LogLevel, logLevels as _logLevels} from "@/logger"
+import {updatePaperTodos} from "@/todos"
 
 const logLevels = Object.keys(_logLevels)
 
@@ -166,6 +167,9 @@ export default class Settings extends Vue {
       }
     }
     DB.papers.bulkPut(modifiedPapers)
+    for (const paper of modifiedPapers) {
+      updatePaperTodos(paper) // so the todos' tags will still match the paper's
+    }
     this.snackbarMsg = `Renamed ${this.oldTag} -> ${this.newTag} in ${modifiedPapers.length} papers.`
     this.oldTag = ""
     this.newTag = ""

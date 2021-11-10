@@ -2,6 +2,7 @@ import Dexie from "dexie"
 import {exportDB as _exportDB} from "dexie-export-import"
 import {PaperData} from "@/paper_types"
 import {LogLevel} from "@/logger"
+import {ToDo} from "@/todos"
 
 class Meta {
   id: number
@@ -135,6 +136,7 @@ class PapersDb extends Dexie {
   imgs: Dexie.Table<Img, string>
   savedQueries: Dexie.Table<SavedQuery, string>
   deletedEntries: Dexie.Table<DeletedEntry, string>
+  todos: Dexie.Table<ToDo, string>
 
   constructor (dbName: string) {
       super(dbName)
@@ -158,12 +160,16 @@ class PapersDb extends Dexie {
       this.version(5).stores({
         deletedEntries: "id", // lastSyncTime
       })
+      this.version(6).stores({
+        todos: "id++, paperId, deadline", // text, tags, priority
+      })
       this.papers = this.table('papers')
       this.meta = this.table('meta')
       this.meta.mapToClass(Meta)
       this.imgs = this.table('imgs')
       this.savedQueries = this.table("savedQueries")
       this.deletedEntries = this.table("deletedEntries")
+      this.todos = this.table("todos")
   }
 }
 

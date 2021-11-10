@@ -24,6 +24,7 @@ import {clearImgCache, getMarkdownForImg} from "../markdown"
 import {loadMathjax} from "../mathjax"
 import { PaperData } from "@/paper_types"
 import { encrypt, cipherBufferToString } from "@/crypto"
+import {updatePaperTodos} from "@/todos"
 
 const autosave = true
 let autosaveIntervalId: number | null = null
@@ -121,6 +122,7 @@ export default class MdText extends Vue {
       this.paper.abstract = this.text
     }
     await DB.papers.put(this.paper)
+    await updatePaperTodos(this.paper)
     if (!autosave) {
       // Saving is actually very fast, but I want the user to see something indicating
       // the paper was saved, so delay a little to make the progress circle visible.

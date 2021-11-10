@@ -120,6 +120,7 @@ import { Dropbox } from 'dropbox'
 import {DB, PapersDb, Meta, getMeta, exportDB} from "../db"
 import {updateDBFromDropbox} from "../dbx"
 import {getPaperFromArxiv, getDataFromYouTube, mergeTexts} from "../utils"
+import {updatePaperTodos, deletePaperTodos} from "@/todos"
 
 const DROPBOX_PATH = "/paper-helper-db.json"
 
@@ -157,6 +158,7 @@ export default class Home extends Vue {
     this.deleted_pd = paper
     this.show_undelete_snackbar = true
     DB.papers.delete(this.deleted_pd.id)
+    deletePaperTodos(paper)
     DB.deletedEntries.add({id: paper.id, lastSyncTime: paper.lastSyncTime})
     Vue.delete(this.cached_paper_data, paper.id)
   }
@@ -164,6 +166,7 @@ export default class Home extends Vue {
     this.show_undelete_snackbar = false
     if (this.deleted_pd !== null) {
       DB.papers.add(this.deleted_pd)
+      updatePaperTodos(this.deleted_pd)
       DB.deletedEntries.delete(this.deleted_pd.id)
       Vue.set(this.cached_paper_data, this.deleted_pd.id, this.deleted_pd)
     }
@@ -248,6 +251,7 @@ export default class Home extends Vue {
   updatePriority(paper: PaperData, priority: number) {
     paper.priority = priority
     DB.papers.put(paper)
+    updatePaperTodos(paper) // so the todos' priorities will match the paper's
   }
   async sync_dropbox(promptForToken: boolean=true) {
     if (!this.meta.dropboxToken) {
