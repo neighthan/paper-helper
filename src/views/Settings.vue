@@ -74,6 +74,17 @@
             </v-card-text>
           </v-card>
 
+          <v-card>
+            <v-card-title>App Info</v-card-title>
+            <v-card-text>Version: 1.0.0</v-card-text>
+          </v-card>
+
+          <v-card v-if="devMode">
+            <v-card-title>Dev Things</v-card-title>
+            <v-card-actions>
+              <v-btn text @click="addEntries">Add Entries</v-btn>
+            </v-card-actions>
+          </v-card>
         </v-col>
         <v-snackbar v-model="showSnackbar" :color="snackbarColor">
           {{snackbarMsg}}
@@ -107,6 +118,7 @@ export default class Settings extends Vue {
   snackbarColor = "black"
   logLevel: LogLevel = "silent"
   logLevels = logLevels
+  devMode = (<any> window).webpackHotUpdate !== undefined
 
   async created() {
     const meta = await getMeta(DB)
@@ -184,8 +196,18 @@ export default class Settings extends Vue {
     })
     this.password = ""
   }
+  addEntries() {
+    for (let i = 0; i < 300; i ++) {
+      const paper = new PaperData()
+      paper.title = "Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model"
+      paper.abstract = "Constructing agents with planning capabilities has long been one of the main challenges in the pursuit of artificial intelligence. Tree-based planning methods have enjoyed huge success in challenging domains, such as chess and Go, where a perfect simulator is available. However, in real-world problems the dynamics governing the environment are often complex and unknown. In this work we present the MuZero algorithm which, by combining a tree-based search with a learned model, achieves superhuman performance in a range of challenging and visually complex domains, without any knowledge of their underlying dynamics. MuZero learns a model that, when applied iteratively, predicts the quantities most directly relevant to planning: the reward, the action-selection policy, and the value function. When evaluated on 57 different Atari games - the canonical video game environment for testing AI techniques, in which model-based planning approaches have historically struggled - our new algorithm achieved a new state of the art. When evaluated on Go, chess and shogi, without any knowledge of the game rules, MuZero matched the superhuman performance of the AlphaZero algorithm that was supplied with the game rules."
+      paper.tags = ["ml", "rl", "paper", "games", "planning", "world-model"]
+      paper.priority = 0
+      paper.url = "https://arxiv.org/abs/1911.08265"
+      paper.authors = ["Julian Schrittwieser", "Ioannis Antonoglou", "Thomas Hubert", "Karen Simonyan", "Laurent Sifre", "Simon Schmitt", "Arthur Guez", "Edward Lockhart", "Demis Hassabis", "Thore Graepel", "Timothy Lillicrap", "David Silver"]
+      paper.date = "2020/02/21"
+      DB.papers.put(paper)
+    }
+  }
 }
 </script>
-
-<style scoped lang="scss">
-</style>
