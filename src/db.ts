@@ -120,6 +120,7 @@ type SavedQuery = {
   timeAdded: number,
   lastSyncTime: number,
   lastModifiedTime: number,
+  entryType: string,
 }
 
 type DeletedEntry = {

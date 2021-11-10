@@ -332,6 +332,7 @@ export default class Home extends Vue {
         timeAdded: Date.now(),
         lastSyncTime: -1,
         lastModifiedTime: +new Date(),
+        entryType: "PaperData",
       }
       await DB.savedQueries.put(query)
     }

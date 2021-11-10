@@ -37,6 +37,7 @@ export default class SavedQueryDialog extends Vue {
   tags: string[] = []
   timeAdded = -1
   lastSyncTime = -1
+  entryType = "PaperData"
 
   created() {
     if (this.initialData) {
@@ -48,9 +49,10 @@ export default class SavedQueryDialog extends Vue {
     this.id = query.id
     this.name = query.name
     this.searchString = query.searchString
-    this.tags = query.tags // TODO: need to copy?
+    this.tags = [...query.tags]
     this.timeAdded = query.timeAdded
     this.lastSyncTime = query.lastSyncTime
+    this.entryType = query.entryType
   }
 
   resetFields() {
@@ -59,6 +61,7 @@ export default class SavedQueryDialog extends Vue {
     this.searchString = ""
     this.tags = []
     this.timeAdded = -1
+    this.entryType = "PaperData"
   }
 
   @Watch("initialData")
@@ -77,6 +80,7 @@ export default class SavedQueryDialog extends Vue {
       timeAdded: this.timeAdded,
       lastSyncTime: this.lastSyncTime,
       lastModifiedTime: Date.now(),
+      entryType: this.entryType,
     }
   }
 
