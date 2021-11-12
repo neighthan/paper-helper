@@ -38,7 +38,7 @@ export default class SavedQueryDialog extends Vue {
   tags: string[] = []
   timeAdded = -1
   lastSyncTime = -1
-  entryType = "PaperData"
+  entryType = "paper"
 
   created() {
     if (this.initialData) {

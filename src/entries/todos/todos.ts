@@ -25,7 +25,7 @@ function getTodos(entry: Entry) {
     let deadline = ""
     if (line.startsWith("[")) {
       const tagsEnd = line.indexOf("]")
-      tags = line.substring(1, tagsEnd).split(",")
+      tags = line.substring(1, tagsEnd).split(",").map(t => t.trim())
       line = line.substring(tagsEnd + 1)
     }
     if (line.startsWith("{")) {
@@ -55,15 +55,18 @@ function getTodos(entry: Entry) {
  */
 async function updateTodos(entry: Entry) {
   const todos = getTodos(entry)
+  console.log("found todos:", todos)
   if (todos.length === 0) return
-  DB.transaction("rw", DB.todos, async () => {
-    deleteTodos(entry)
-    DB.todos.bulkAdd(todos)
+  await DB.transaction("rw", DB.todos, async () => {
+    await deleteTodos(entry)
+    await DB.todos.bulkAdd(todos)
+  }).catch(reason => {
+    console.error(reason)
   })
 }
 
 async function deleteTodos(entry: Entry) {
-  await DB.todos.where("paperId").equals(entry.id).delete()
+  await DB.todos.where("entryId").equals(entry.id).delete()
 }
 
 export {updateTodos, deleteTodos, ToDo}

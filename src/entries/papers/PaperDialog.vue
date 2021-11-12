@@ -107,7 +107,7 @@ export default class PaperDialog extends Vue {
       paper.id = genId()
     }
     const meta = await getMeta(DB)
-    await DB.transaction("rw", DB.meta, DB.papers, async () => {
+    await DB.transaction("rw", DB.meta, DB.papers, DB.todos, async () => {
       DB.papers.put(paper)
       updateTodos(paper)
       meta.tags = [...new Set(meta.tags.concat(paper.tags))]

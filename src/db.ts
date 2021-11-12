@@ -154,7 +154,9 @@ class PapersDb extends Dexie {
       this.version(6).stores({
         todos: "id++, paperId, deadline", // text, tags, priority
       })
-      this.version(7).upgrade(trans => {
+      this.version(7).stores({
+        todos: "id++, entryId, deadline",
+      }).upgrade(trans => {
         trans.table("papers").toCollection().modify(paper => {
           paper.notes = paper.abstract
           delete paper.abstract
