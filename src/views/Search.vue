@@ -39,10 +39,15 @@
             <v-icon>search</v-icon>
           </v-btn>
 
-          <v-btn icon @click="showPaperDialog(makeDefaultPaper())">
+          <v-btn icon @click="showEntryDialog(makeDefaultEntry())">
             <v-icon>add</v-icon>
           </v-btn>
-          <PaperDialog ref="paperDialog" :all_tags="meta.tags" @addPaper="addPaper"/>
+          <component
+            :is="entryComponent"
+            ref="entryDialog"
+            :all_tags="meta.tags"
+            @addEntry="addEntry"
+          ></component>
 
           <v-dialog v-model="addFromURLDialog">
             <template v-slot:activator="{on, attrs}">
@@ -59,7 +64,7 @@
 
           <v-tooltip open-delay="1000">
             <template v-slot:activator="{on}">
-              <v-btn icon v-on="on" @click="sync_dropbox">
+              <v-btn icon v-on="on" @click="syncDropbox">
                 <v-icon>backup</v-icon>
               </v-btn>
             </template>
@@ -69,7 +74,7 @@
           <v-tooltip open-delay="1000">
             <template v-slot:activator="{on}">
               <v-btn icon v-on="on" @click="download_data">
-                <v-icon :color="download_red">save_alt</v-icon>
+                <v-icon>save_alt</v-icon>
               </v-btn>
             </template>
             <span>Download</span>
@@ -89,16 +94,19 @@
       <v-main>
         <v-container fluid>
           <v-expansion-panels accordion>
-            <v-expansion-panel v-for="pd of filtered_paper_data" :key="pd.id">
-              <ExpansionItem :pd="pd"
-                @edit_pd="showPaperDialog" @delete_pd="delete_pd" @updatePriority="updatePriority"
+            <v-expansion-panel v-for="e of filteredEntries" :key="e.id">
+              <ExpansionItem
+                :entry="e"
+                @editEntry="showEntryDialog"
+                @deleteEntry="deleteEntry"
+                @updatePriority="updatePriority"
                 @addNotes="addNotes"
               />
             </v-expansion-panel>
           </v-expansion-panels>
           <v-snackbar v-model="show_undelete_snackbar">
             Data deleted.
-            <v-btn text color="red" @click="undelete_pd">Undo</v-btn>
+            <v-btn text color="red" @click="undeleteEntry">Undo</v-btn>
           </v-snackbar>
           <v-snackbar v-model="showDbxSnackbar">
             {{dbxSnackbarMsg}}
@@ -111,29 +119,56 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from "vue-property-decorator";
-import PaperDialog from "@/components/PaperDialog.vue"
+import PaperDialog from "@/entries/papers/PaperDialog.vue"
+import ToDoDialog from "@/entries/todos/ToDoDialog.vue"
 import ExpansionItem from "@/components/ExpansionItem.vue"
 import NavIcon from "@/components/NavIcon.vue"
 import {importInto} from "dexie-export-import"
-import { CachedPaperData, PaperData, PaperTempData } from "@/paper_types"
+import {PaperData} from "@/entries/papers/paper"
+import {Entry} from "@/entries/entry"
 import { Dropbox } from 'dropbox'
 import {DB, PapersDb, Meta, getMeta, exportDB} from "../db"
 import {updateDBFromDropbox} from "../dbx"
 import {getPaperFromArxiv, getDataFromYouTube, mergeTexts} from "../utils"
-import {updatePaperTodos, deletePaperTodos} from "@/todos"
+import {updateTodos, deleteTodos, ToDo} from "@/entries/todos/todos"
 
 const DROPBOX_PATH = "/paper-helper-db.json"
 
-@Component({components: {PaperDialog, ExpansionItem, NavIcon}})
-export default class Home extends Vue {
+// convenience data for each entry recreated each time; maybe make this computed on
+// Entry? (after making Entry a class)
+type EntryTempDatum = {
+  search_string: string,
+  search_tags: Set<string>,
+}
+
+const PaperTypes = {
+  key: <"paper"> "paper",
+  component: <"PaperDialog"> "PaperDialog",
+  table: DB.papers,
+  class: new PaperData(),
+  ctor: PaperData,
+}
+
+const TodoTypes = {
+  key: <"todo"> "todo",
+  component: <"ToDoDialog"> "ToDoDialog",
+  table: DB.todos,
+  class: new ToDo(),
+  ctor: ToDo,
+}
+const EntryTypes = {paper: PaperTypes, todo: TodoTypes}
+type ValueOf<T> = T[keyof T]
+
+
+@Component({components: {PaperDialog, ToDoDialog, ExpansionItem, NavIcon}})
+export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   done_loading = false
-  cached_paper_data: CachedPaperData = {}
-  paper_temp_data: PaperTempData = {}
+  cachedEntries: {[key: string]: E["class"]} = {}
+  entryTempData: {[key: string]: EntryTempDatum} = {}
   query = ""
   query_tags = ""
-  deleted_pd: PaperData | null = null
+  deletedEntry: E["class"] | null = null
   show_undelete_snackbar = false
-  n_papers_all_red = 10
   dialog = false
   addFromURLDialog = false
   addURL = ""
@@ -145,37 +180,49 @@ export default class Home extends Vue {
   focusSearch = false
   showDbxSnackbar = false
   dbxSnackbarMsg = ""
+  entryKey!: E["key"]
+  entryTable!: E["table"]
+  EntryClass!: E["ctor"]
+  entryComponent: E["component"] = "PaperDialog"
 
   async created() {
+    this.entryKey = <any> (await DB.savedQueries.get(this.queryId))!.entryType
+    // use an object / map instead of if-else once things are working
+    this.entryTable = EntryTypes[this.entryKey].table
+    this.EntryClass = EntryTypes[this.entryKey].ctor
+    this.entryComponent = EntryTypes[this.entryKey].component
+
     await loadFromDB(this, DB, this.queryId)
     const syncThreshMs = this.meta.syncTimeThreshHours * 3600 * 1000
     if (Date.now() - this.meta.lastSyncTime > syncThreshMs) {
       console.log("Autosyncing with dropbox (if token is available).")
-      this.sync_dropbox(false)
+      this.syncDropbox(false)
     }
   }
-  delete_pd(paper: PaperData) {
-    this.deleted_pd = paper
+  deleteEntry(entry: E["class"]) {
+    this.deletedEntry = entry
     this.show_undelete_snackbar = true
-    DB.papers.delete(this.deleted_pd.id)
-    deletePaperTodos(paper)
-    DB.deletedEntries.add({id: paper.id, lastSyncTime: paper.lastSyncTime})
-    Vue.delete(this.cached_paper_data, paper.id)
+    this.entryTable.delete(this.deletedEntry.id)
+    deleteTodos(entry)
+    if (entry.lastSyncTime !== undefined) {
+      DB.deletedEntries.add({id: entry.id, lastSyncTime: entry.lastSyncTime})
+    }
+    Vue.delete(this.cachedEntries, entry.id)
   }
-  undelete_pd() {
+  undeleteEntry() {
     this.show_undelete_snackbar = false
-    if (this.deleted_pd !== null) {
-      DB.papers.add(this.deleted_pd)
-      updatePaperTodos(this.deleted_pd)
-      DB.deletedEntries.delete(this.deleted_pd.id)
-      Vue.set(this.cached_paper_data, this.deleted_pd.id, this.deleted_pd)
+    if (this.deletedEntry !== null) {
+      this.entryTable.add(<any> this.deletedEntry)
+      updateTodos(this.deletedEntry)
+      DB.deletedEntries.delete(this.deletedEntry.id)
+      Vue.set(this.cachedEntries, this.deletedEntry.id, this.deletedEntry)
     }
   }
-  addNotes(paper: PaperData) {
-    this.$router.push({path: `/notes/${paper.id}`})
+  addNotes(entry: E["class"]) {
+    this.$router.push({path: `/notes/${entry.table}/${entry.id}`})
   }
   openFirst() {
-    this.addNotes(this.filtered_paper_data[0])
+    this.addNotes(this.cachedEntries[0])
   }
   @Watch("addFromURLDialog")
   onPropertyChanged(newVal: boolean, oldVal: boolean) {
@@ -186,7 +233,7 @@ export default class Home extends Vue {
   async addFromURL() {
     const url = this.addURL
     this.addFromURLDialog = false
-    let data: PaperData
+    let data: E["class"]
     if (url.includes("arxiv.org")) {
       data = await getPaperFromArxiv(url)
     } else if (url.includes("youtube.com")) {
@@ -194,14 +241,18 @@ export default class Home extends Vue {
     } else {
       // in Python, I would try to find an h1 for the url if not on arxiv. We could try to
       // fetch(url) and do that here, but with CORS, we probably won't have access
-      data = new PaperData()
-      data.url = url
+      data = new this.EntryClass()
+      // todo: a nicer way to discriminate Entry subtypes that might have this additional
+      // field? we could use this later for entry.date too
+      if ((<any> data).url !== undefined) {
+        (<any> data).url = url
+      }
     }
     data.tags.push(...this.savedQueryTags)
     if (this.query_tags !== "") {
       data.tags.push(...this.query_tags.split(" "))
     }
-    this.showPaperDialog(data)
+    this.showEntryDialog(data)
   }
   async download_data() {
     try {
@@ -214,9 +265,6 @@ export default class Home extends Vue {
       a.dataset.downloadurl = [mime_type, a.download, a.href].join(":")
       a.click()
 
-      // TODO: this line should only run if you actually download the file
-      // (not if you cancel saving it)
-      this.meta.n_papers_since_backup = 0
     } catch (error) {
       console.error(error)
     }
@@ -238,22 +286,36 @@ export default class Home extends Vue {
   async load_data(jsonFile: File) {
     await importInto(DB, jsonFile, {overwriteValues: true})
     await loadFromDB(this, DB, this.queryId)
-    this.meta.n_papers_since_backup = this.n_papers_all_red
   }
-  async addPaper(paper: PaperData) {
-    Vue.set(this.cached_paper_data, paper.id, paper)
-    this.paper_temp_data[paper.id] = {
-      search_string: `${paper.title.toLowerCase()} ${paper.abstract.toLowerCase()}`,
-      search_tags: getPrefixSet(paper.tags),
-      date_string: new Date(paper.date || paper.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
+  async addEntry(entry: E["class"]) {
+    Vue.set(this.cachedEntries, entry.id, entry)
+    this.entryTempData[entry.id] = {
+      search_string: `${entry.title.toLowerCase()} ${entry.notes.toLowerCase()}`,
+      search_tags: getPrefixSet(entry.tags),
     }
   }
-  updatePriority(paper: PaperData, priority: number) {
-    paper.priority = priority
-    DB.papers.put(paper)
-    updatePaperTodos(paper) // so the todos' priorities will match the paper's
+  updatePriority(entry: E["class"], priority: number) {
+    entry.priority = priority
+    // thought TS would be smart enough for this, but apparently it can't tell that
+    // E["class"] and E["table"] are always compatible
+    this.entryTable.put(<any> entry)
+    updateTodos(entry) // so the todos' priorities will match the entry's
   }
-  async sync_dropbox(promptForToken: boolean=true) {
+  async syncDropbox(promptForToken: boolean=true) {
+    // all entries have IDs; check if the current Entry subtype is also syncable (so that
+    // the call to updateDBFromDropbox will work and to show that syncing is desired)
+    const entry = await this.entryTable.toCollection().first()
+    if (entry === undefined) {
+      console.log("No entries to sync.")
+      return
+    }
+    if (entry.lastSyncTime === undefined) {
+      console.log(
+        `Entries from table ${this.entryTable.name} have no lastSyncTime; skipping.`
+      )
+      return
+    }
+
     if (!this.meta.dropboxToken) {
       // TODO: make this nicer
       if (!promptForToken) return
@@ -271,16 +333,16 @@ export default class Home extends Vue {
       const json = JSON.parse(await dbxJsonBlob.text())
       const tables = json.data.data
 
-      const paperMergeCallback = (newerDatum: PaperData, olderDatum: PaperData) => {
-        if (olderDatum.abstract !== newerDatum.abstract) {
-          newerDatum.tags.push("merge-conflict")
-          newerDatum.abstract = mergeTexts(newerDatum.abstract, olderDatum.abstract, "!~")
-          newerDatum.lastModifiedTime = Date.now()
+      const entryMergeCallback = (newEntry: Entry, oldEntry: Entry) => {
+        if (oldEntry.notes !== newEntry.notes) {
+          newEntry.tags.push("merge-conflict")
+          newEntry.notes = mergeTexts(newEntry.notes, oldEntry.notes, "!~")
+          newEntry.lastModifiedTime = Date.now()
         }
       }
       // TODO: when snackbar goes away, show a new snackbar with this message
       const querySnackbarMsg = await updateDBFromDropbox(tables, DB.savedQueries)
-      this.dbxSnackbarMsg = await updateDBFromDropbox(tables, DB.papers, paperMergeCallback)
+      this.dbxSnackbarMsg = await updateDBFromDropbox(tables, <any> this.entryTable, <any> entryMergeCallback)
 
       await this._dbUpload()
       this.showDbxSnackbar = true
@@ -293,13 +355,15 @@ export default class Home extends Vue {
       this.showDbxSnackbar = true
     }
   }
+
+// only call this from syncDropbox!
   async _dbUpload() {
-    // only update the sync time for papers which have been modified
+    // only update the sync time for entries which have been modified
     const syncTime = Date.now()
     try {
-      await DB.papers.toCollection().modify(paper => {
-        if (paper.lastModifiedTime > paper.lastSyncTime) {
-          paper.lastSyncTime = syncTime
+      await this.entryTable.toCollection().modify(entry => {
+        if (entry.lastModifiedTime > <number> entry.lastSyncTime) {
+          entry.lastSyncTime = syncTime
         }
       })
     } catch (error) {
@@ -332,38 +396,35 @@ export default class Home extends Vue {
         timeAdded: Date.now(),
         lastSyncTime: -1,
         lastModifiedTime: +new Date(),
-        entryType: "PaperData",
+        entryType: "paper",
       }
       await DB.savedQueries.put(query)
     }
     this.$router.push({path: `/search/${query.id}`})
   }
-  showPaperDialog(paper: PaperData) {
-    ;(<PaperDialog> this.$refs.paperDialog).show(paper)
+  showEntryDialog(entry: E["class"]) {
+    // todo: ensure all dialogs have .show?
+    ;(<any> this.$refs.entryDialog).show(entry)
   }
-  makeDefaultPaper() {
-    const paper = new PaperData()
-    paper.tags = [...this.savedQueryTags]
+  makeDefaultEntry(): E["class"] {
+    const entry = new this.EntryClass()
+    entry.tags = [...this.savedQueryTags]
     if (this.query_tags !== "") {
-      paper.tags.push(...this.query_tags.split(" "))
+      entry.tags.push(...this.query_tags.split(" "))
     }
-    return paper
+    return entry
   }
-  get filtered_paper_data() {
-    let data = Object.values(this.cached_paper_data)
+  get filteredEntries() {
+    let data = Object.values(this.cachedEntries)
     if (this.query_tags != "") {
       const query_tags = this.query_tags.toLowerCase().split(" ")
-      data = data.filter(pd => query_tags.every(tag => this.paper_temp_data[pd.id].search_tags.has(tag)))
+      data = data.filter(e => query_tags.every(tag => this.entryTempData[e.id].search_tags.has(tag)))
     }
     if (this.query != "") {
       const query = this.query.toLowerCase()
-      data = data.filter(pd => this.paper_temp_data[pd.id].search_string.includes(query))
+      data = data.filter(e => this.entryTempData[e.id].search_string.includes(query))
     }
-    return data.sort((pd1, pd2) => pd2.priority - pd1.priority)
-  }
-  get download_red() {
-    const red = Math.round(255 * Math.min(this.meta.n_papers_since_backup / this.n_papers_all_red, 1))
-    return `rgba(${red}, 0, 0, 1)`
+    return data.sort((e1, e2) => e2.priority - e1.priority)
   }
 }
 
@@ -378,7 +439,9 @@ function getPrefixSet(tags: string[]) {
   return prefixes
 }
 
-async function loadFromDB(vue: Home, db: PapersDb, queryId: string) {
+async function loadFromDB<E extends ValueOf<typeof EntryTypes>>(
+  vue: Home<E>, db: PapersDb, queryId: string
+) {
   vue.done_loading = false
   vue.meta = await getMeta(db)
   const query = await db.savedQueries.get(queryId)
@@ -392,26 +455,28 @@ async function loadFromDB(vue: Home, db: PapersDb, queryId: string) {
 
   const queryTags = query.tags.map(tag => tag.toLowerCase())
   const queryStr = query.searchString.toLowerCase()
-  const papers = (await db.papers.toArray()).filter(paper => {
-    const tags = paper.tags.map(tag => tag.toLowerCase())
+  // typescript can't do filter on types that are unions of array types, but it works on
+  // arrays of union types, so hack around this a bit.
+  let entries = <E["class"][]> await vue.entryTable.toArray()
+  entries = entries.filter(entry => {
+    const tags = entry.tags.map(tag => tag.toLowerCase())
     for (let tag of queryTags) {
       if (!tags.includes(tag)) {
         return false
       }
     }
-    if (paper.title.toLowerCase().includes(queryStr) || paper.abstract.toLowerCase().includes(queryStr)) {
+    if (entry.title.toLowerCase().includes(queryStr) || entry.notes.toLowerCase().includes(queryStr)) {
       return true
     }
     return false
-  })
-  papers.forEach(p => {
-    vue.paper_temp_data[p.id] = {
-      search_string: `${p.title.toLowerCase()} ${p.abstract.toLowerCase()}`,
-      search_tags: getPrefixSet(p.tags),
-      date_string: new Date(p.date || p.time_added).toLocaleString("default", {month: "short", year: "numeric"}),
+  }) as typeof entries
+  entries.forEach(e => {
+    vue.entryTempData[e.id] = {
+      search_string: `${e.title.toLowerCase()} ${e.notes.toLowerCase()}`,
+      search_tags: getPrefixSet(e.tags),
     }
   })
-  vue.cached_paper_data = Object.fromEntries(papers.map(p => [p.id, p]))
+  vue.cachedEntries = Object.fromEntries(entries.map(e => [e.id, e]))
   vue.done_loading = true
 }
 </script>

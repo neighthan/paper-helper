@@ -2,15 +2,15 @@
   <div class="expansion-item">
     <v-expansion-panel-header hide-actions>
       <v-card class="mx-auto" flat>
-        <v-card-title>{{pd.title}}</v-card-title>
+        <v-card-title>{{entry.title}}</v-card-title>
         <v-card-actions>
-          <v-tooltip v-if="pd.url" right>
+          <v-tooltip v-if="entry.url" right>
             <template v-slot:activator="{on}">
-              <v-btn text v-on="on" @click.native.stop="open_link(pd.url)">
+              <v-btn text v-on="on" @click.native.stop="open_link(entry.url)">
                 Open
               </v-btn>
             </template>
-            <span>{{pd.url}}</span>
+            <span>{{entry.url}}</span>
           </v-tooltip>
           <v-btn v-else text disabled>Open</v-btn>
 
@@ -23,18 +23,18 @@
           </v-col>
           <v-tooltip top v-else>
             <template v-slot:activator="{on}">
-              <v-btn icon v-on="on" @mousedown.native.stop="editPriority(pd)">
+              <v-btn icon v-on="on" @mousedown.native.stop="editPriority(entry)">
                 <v-icon>swap_vert</v-icon>
               </v-btn>
             </template>
-            <span>{{pd.priority}}</span>
+            <span>{{entry.priority}}</span>
           </v-tooltip>
 
-          <v-btn icon @click.native.stop="delete_pd()">
+          <v-btn icon @click.native.stop="deleteEntry()">
             <v-icon>delete</v-icon>
           </v-btn>
 
-          <v-btn icon @click.native.stop="edit_pd()">
+          <v-btn icon @click.native.stop="editEntry()">
             <v-icon>edit</v-icon>
           </v-btn>
 
@@ -42,15 +42,15 @@
             <v-icon>open_in_new</v-icon>
           </v-btn>
 
-          <v-chip v-for="tag of pd.tags" :key="pd.id + tag" label outlined>{{tag}}</v-chip>
+          <v-chip v-for="tag of entry.tags" :key="entry.id + tag" label outlined>{{tag}}</v-chip>
 
           <v-spacer></v-spacer>
-          {{pd.date_string}}
+          {{entry.dateString}}
         </v-card-actions>
       </v-card>
     </v-expansion-panel-header>
     <v-expansion-panel-content>
-      <div class="abstract" v-html="mdAbstract" style="text-align: left; word-wrap: break-word">
+      <div class="abstract" v-html="mdNotes" style="text-align: left; word-wrap: break-word">
       </div>
     </v-expansion-panel-content>
   </div>
@@ -58,49 +58,49 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator"
-import { PaperData } from "@/paper_types"
+import {Entry} from "@/entries/entry"
 import {renderMarkdown} from "../markdown"
 
 @Component
 export default class ExpansionItem extends Vue {
-  @Prop() private pd!: PaperData
+  @Prop() private entry!: Entry
   editingPriority = false
-  priority: string | number = this.pd.priority
+  priority: string | number = this.entry.priority
   min_priority = -100
   max_priority = 100
 
   open_link(url: string) {
     window.open(url)
   }
-  edit_pd() {
-    this.$emit("edit_pd", this.pd)
+  editEntry() {
+    this.$emit("editEntry", this.entry)
   }
-  delete_pd() {
-    this.$emit("delete_pd", this.pd)
+  deleteEntry() {
+    this.$emit("deleteEntry", this.entry)
   }
   addNotes() {
-    this.$emit("addNotes", this.pd)
+    this.$emit("addNotes", this.entry)
   }
-  editPriority(paper: PaperData) {
+  editPriority(entry: Entry) {
     this.editingPriority = true
   }
   commitPriority() {
     this.editingPriority = false
     // priority should only be a string if an empty or invalid input was submitted
     if (typeof(this.priority) === "string") {
-      this.priority = this.pd.priority
+      this.priority = this.entry.priority
     }
-    if (this.pd.priority != this.priority) {
-      this.$emit("updatePriority", this.pd, this.priority)
+    if (this.entry.priority != this.priority) {
+      this.$emit("updatePriority", this.entry, this.priority)
     }
   }
-  get mdAbstract() {
-    return renderMarkdown(this.pd.abstract, () => {
+  get mdNotes() {
+    return renderMarkdown(this.entry.notes, () => {
       // This is just to make Vue re-render by making it think the abstract changed.
       // Is there a better method for this?
-      let abstract = this.pd.abstract
-      Vue.set(this.pd, "abstract", "")
-      Vue.set(this.pd, "abstract", abstract)
+      const notes = this.entry.notes
+      Vue.set(this.entry, "notes", "")
+      Vue.set(this.entry, "notes", notes)
     })
   }
 }

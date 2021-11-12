@@ -98,12 +98,13 @@
 import {Component, Vue} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
 import {DB, getMeta} from "../db"
-import { PaperData } from "@/paper_types"
+import { Entry } from "@/entries/entry"
+import { PaperData } from "@/entries/papers/paper"
 import getAllSavedPosts from "@/reddit"
 import RedditInfoDialog from "@/components/RedditInfoDialog.vue"
 import SimpleDialog from "@/components/SimpleDialog.vue"
 import {LogLevel, logLevels as _logLevels} from "@/logger"
-import {updatePaperTodos} from "@/todos"
+import {updateTodos} from "@/entries/todos/todos"
 
 const logLevels = Object.keys(_logLevels)
 
@@ -154,23 +155,31 @@ export default class Settings extends Vue {
       meta.tags.push(this.newTag)
     }
     meta._updateDb()
-    const papers = await DB.papers.toArray()
-    const modifiedPapers: PaperData[] = []
-    for (let paper of papers) {
-      if (paper.tags.includes(this.oldTag)) {
-        if (paper.tags.includes(this.newTag) || !this.newTag) {
-          paper.tags.splice(paper.tags.indexOf(this.oldTag), 1)
-        } else {
-          paper.tags[paper.tags.indexOf(this.oldTag)] = this.newTag
+
+    let nModified = 0
+    for (const table of DB.tables) {
+      const first = await table.toCollection().first()
+      if (first.tags === undefined) return
+      const entries = <Entry[]> await table.toArray()
+      const modifiedEntries: Entry[] = []
+      for (let entry of entries) {
+        if (entry.tags.includes(this.oldTag)) {
+          if (entry.tags.includes(this.newTag) || !this.newTag) {
+            entry.tags.splice(entry.tags.indexOf(this.oldTag), 1)
+          } else {
+            entry.tags[entry.tags.indexOf(this.oldTag)] = this.newTag
+          }
+          modifiedEntries.push(entry)
+          nModified++
         }
-        modifiedPapers.push(paper)
       }
-    }
-    DB.papers.bulkPut(modifiedPapers)
-    for (const paper of modifiedPapers) {
-      updatePaperTodos(paper) // so the todos' tags will still match the paper's
-    }
-    this.snackbarMsg = `Renamed ${this.oldTag} -> ${this.newTag} in ${modifiedPapers.length} papers.`
+      table.bulkPut(modifiedEntries)
+      for (const entry of modifiedEntries) {
+        updateTodos(entry) // so the todos' tags will still match the entry's
+      }
+    })
+
+    this.snackbarMsg = `Renamed ${this.oldTag} -> ${this.newTag} in ${nModified} papers.`
     this.oldTag = ""
     this.newTag = ""
     this.snackbarColor = "black"
@@ -204,7 +213,7 @@ export default class Settings extends Vue {
     for (let i = 0; i < 300; i ++) {
       const paper = new PaperData()
       paper.title = "Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model"
-      paper.abstract = "Constructing agents with planning capabilities has long been one of the main challenges in the pursuit of artificial intelligence. Tree-based planning methods have enjoyed huge success in challenging domains, such as chess and Go, where a perfect simulator is available. However, in real-world problems the dynamics governing the environment are often complex and unknown. In this work we present the MuZero algorithm which, by combining a tree-based search with a learned model, achieves superhuman performance in a range of challenging and visually complex domains, without any knowledge of their underlying dynamics. MuZero learns a model that, when applied iteratively, predicts the quantities most directly relevant to planning: the reward, the action-selection policy, and the value function. When evaluated on 57 different Atari games - the canonical video game environment for testing AI techniques, in which model-based planning approaches have historically struggled - our new algorithm achieved a new state of the art. When evaluated on Go, chess and shogi, without any knowledge of the game rules, MuZero matched the superhuman performance of the AlphaZero algorithm that was supplied with the game rules."
+      paper.notes = "Constructing agents with planning capabilities has long been one of the main challenges in the pursuit of artificial intelligence. Tree-based planning methods have enjoyed huge success in challenging domains, such as chess and Go, where a perfect simulator is available. However, in real-world problems the dynamics governing the environment are often complex and unknown. In this work we present the MuZero algorithm which, by combining a tree-based search with a learned model, achieves superhuman performance in a range of challenging and visually complex domains, without any knowledge of their underlying dynamics. MuZero learns a model that, when applied iteratively, predicts the quantities most directly relevant to planning: the reward, the action-selection policy, and the value function. When evaluated on 57 different Atari games - the canonical video game environment for testing AI techniques, in which model-based planning approaches have historically struggled - our new algorithm achieved a new state of the art. When evaluated on Go, chess and shogi, without any knowledge of the game rules, MuZero matched the superhuman performance of the AlphaZero algorithm that was supplied with the game rules."
       paper.tags = ["ml", "rl", "paper", "games", "planning", "world-model"]
       paper.priority = 0
       paper.url = "https://arxiv.org/abs/1911.08265"

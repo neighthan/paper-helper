@@ -6,6 +6,7 @@
         <v-combobox label="Tags" v-model="tags" :items="allTags" multiple :delimiters="[' ']" dense small-chips>
         </v-combobox>
         <v-text-field label="Search String" v-model="searchString" dense></v-text-field>
+        <v-text-field label="Entry Type" v-model="entryType" dense></v-text-field>
       </v-card-text>
 
       <v-divider></v-divider>

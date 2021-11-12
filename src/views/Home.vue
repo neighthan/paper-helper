@@ -75,7 +75,7 @@ export default class Home extends Vue {
         timeAdded: Date.now(),
         lastSyncTime: -1,
         lastModifiedTime: +new Date(),
-        entryType: "PaperData",
+        entryType: "paper",
       }
       DB.savedQueries.put(query)
       Vue.set(this.savedQueries, query.id, query)

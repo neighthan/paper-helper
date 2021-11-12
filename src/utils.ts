@@ -1,4 +1,4 @@
-import { PaperData } from "./paper_types"
+import { PaperData } from "./entries/papers/paper"
 
 export function genId() {
   return Date.now().toString(16) + Math.random().toString(16).substr(2)
@@ -19,7 +19,7 @@ export async function getPaperFromArxiv(url: string) {
   data.title = match?.length == 2 ? match[1] : ""
   match = xml.match(/<summary>(.*?)<\/summary>/s)
   if (match?.length == 2) {
-    data.abstract = match[1].replaceAll("\n", " ").trim()
+    data.notes = match[1].replaceAll("\n", " ").trim()
   }
   match = xml.match(/<published>(.*?)<\/published>/s)
   if (match?.length == 2) {
@@ -55,7 +55,7 @@ export async function getDataFromYouTube(url: string) {
   const thumbnail = videoData.snippet.thumbnails.standard
   // TODO: try to use other thumbnails if standard isn't found
   const thumbnailMd = thumbnail !== undefined ? `\n![video thumbnail](${thumbnail.url})` : ""
-  data.abstract = `Duration ${duration}${thumbnailMd}\n\n${videoData.snippet.description}`
+  data.notes = `Duration ${duration}${thumbnailMd}\n\n${videoData.snippet.description}`
   return data
 }
 

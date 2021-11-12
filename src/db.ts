@@ -1,12 +1,11 @@
 import Dexie from "dexie"
 import {exportDB as _exportDB} from "dexie-export-import"
-import {PaperData} from "@/paper_types"
+import {PaperData} from "@/entries/papers/paper"
 import {LogLevel} from "@/logger"
-import {ToDo} from "@/todos"
+import {ToDo} from "@/entries/todos/todos"
 
 class Meta {
   id: number
-  protected _n_papers_since_backup: number
   protected _tags: string[]
   protected _dropboxToken: string
   protected _redditUserAgent: string
@@ -19,7 +18,6 @@ class Meta {
 
   constructor(
     id = 0,
-    n_papers_since_backup = 0,
     tags: string[] = [],
     dropboxToken = "",
     redditUserAgent = "",
@@ -31,7 +29,6 @@ class Meta {
     logLevel: LogLevel = "debug",
   ) {
     this.id = id
-    this._n_papers_since_backup = n_papers_since_backup
     this._tags = tags
     this._dropboxToken = dropboxToken
     this._redditUserAgent = redditUserAgent
@@ -45,9 +42,6 @@ class Meta {
 
   // dexie didn't like using a getter for id, but we don't want a setter anyway, so
   // it's not a problem (just can't make it readonly)
-  get n_papers_since_backup() {
-    return this._n_papers_since_backup
-  }
   get tags() {
     return this._tags
   }
@@ -70,10 +64,6 @@ class Meta {
   }
   get logLevel() {
     return this._logLevel
-  }
-  set n_papers_since_backup(n_papers_since_backup) {
-    this._n_papers_since_backup = n_papers_since_backup
-    this._updateDb()
   }
   set tags(tags) {
     this._tags = tags
@@ -163,6 +153,16 @@ class PapersDb extends Dexie {
       })
       this.version(6).stores({
         todos: "id++, paperId, deadline", // text, tags, priority
+      })
+      this.version(7).upgrade(trans => {
+        trans.table("papers").toCollection().modify(paper => {
+          paper.notes = paper.abstract
+          delete paper.abstract
+          paper.table = "papers"
+        })
+        trans.table("todos").toCollection().modify(todo => {
+          todo.table = "todos"
+        })
       })
       this.papers = this.table('papers')
       this.meta = this.table('meta')

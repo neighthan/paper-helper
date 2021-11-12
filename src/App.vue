@@ -13,8 +13,8 @@ import {Component, Vue} from "vue-property-decorator"
 import NavDrawer from "@/components/NavDrawer.vue"
 import {DB, getMeta} from "@/db"
 import {logger} from "@/logger"
-import PaperDialog from "@/components/PaperDialog.vue"
-import {PaperData} from "@/paper_types"
+import PaperDialog from "@/entries/papers/PaperDialog.vue"
+import {PaperData} from "@/entries/papers/paper"
 
 @Component({components: {NavDrawer, PaperDialog}})
 export default class App extends Vue {

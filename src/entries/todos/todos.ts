@@ -1,34 +1,27 @@
-import {PaperData} from "@/paper_types"
-import {genId} from "@/utils"
+import {Entry} from "@/entries/entry"
 import {DB} from "@/db"
 
 // don't sync to dbx; instead, just recompute the todos after you finish
 // dbx syncing (if you want to be faster, only for the papers that've
 // been modified)
-// to get closer to having more general entry types, make some Entry
-// base class and have both Paper and ToDO inherit from it? Then
-// use that as the type for the UI in Search.vue and
-type ToDo = {
-  id: string,
-  text: string,
-  paperId: string, // paper this todo was pulled from; empty if no paper
-  tags: string[],
-  priority: number,
-  deadline: string,
+class ToDo extends Entry{
+  entryId = "" // entry this todo was pulled from; empty if no entry
+  entryTable = "" // name of the dexie table with the entry, if entryId given
+  deadline = ""
+  table = "todos"
 }
 
-// put this into a separate function
 // get all of the todos from the paper
 // format of the todos:
 // @TODO[tag1, tag2]{80}(11/16/2021) text
 // tags, priority, and deadline are optional but, if given, must be in this order
-function getTodos(paper: PaperData) {
+function getTodos(entry: Entry) {
   const todos: ToDo[] = []
-  for (let line of paper.abstract.split("\n")) {
+  for (let line of entry.notes.split("\n")) {
     if (!line.startsWith("@TODO")) continue
     line = line.substring(5)
-    let tags = paper.tags
-    let priority = paper.priority
+    let tags = entry.tags
+    let priority = entry.priority
     let deadline = ""
     if (line.startsWith("[")) {
       const tagsEnd = line.indexOf("]")
@@ -45,32 +38,32 @@ function getTodos(paper: PaperData) {
       deadline = line.substring(1, deadlineEnd)
       line = line.substring(deadlineEnd + 1)
     }
-    todos.push({
-      text: line.trim(),
-      priority: priority,
-      tags: tags,
-      paperId: paper.id,
-      deadline: deadline,
-      id: genId(),
-    })
+    const todo = new ToDo()
+    todo.notes = line.trim()
+    todo.priority = priority
+    todo.tags = tags
+    todo.entryId = entry.id
+    todo.entryTable = entry.table
+    todo.deadline = deadline
+    todos.push(todo)
   }
   return todos
 }
 
 /**
- * Deletes any existing todoos for `paper` and adds new ones.
+ * Deletes any existing todos for `entry` and adds new ones.
  */
-async function updatePaperTodos(paper: PaperData) {
-  const todos = getTodos(paper)
+async function updateTodos(entry: Entry) {
+  const todos = getTodos(entry)
   if (todos.length === 0) return
   DB.transaction("rw", DB.todos, async () => {
-    deletePaperTodos(paper)
+    deleteTodos(entry)
     DB.todos.bulkAdd(todos)
   })
 }
 
-async function deletePaperTodos(paper: PaperData) {
-  await DB.todos.where("paperId").equals(paper.id).delete()
+async function deleteTodos(entry: Entry) {
+  await DB.todos.where("paperId").equals(entry.id).delete()
 }
 
-export {updatePaperTodos, deletePaperTodos, ToDo}
+export {updateTodos, deleteTodos, ToDo}

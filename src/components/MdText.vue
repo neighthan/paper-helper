@@ -2,7 +2,7 @@
   <v-row id="textMd">
     <v-col v-if="textVisible" style="width: 50vh">
       <v-textarea no-resize ref="textarea" autofocus v-model="text" id="mdText"
-        @keydown.ctrl.s.prevent="savePaper(false)"
+        @keydown.ctrl.s.prevent="saveEntry(false)"
         @keydown.tab.prevent="tab"
         @keydown.ctrl.c.prevent="execCutCopy('copy')"
         @keydown.ctrl.x.prevent="execCutCopy('cut')"
@@ -22,9 +22,9 @@ import {DB} from "../db"
 import {genId} from "../utils"
 import {clearImgCache, getMarkdownForImg} from "../markdown"
 import {loadMathjax} from "../mathjax"
-import { PaperData } from "@/paper_types"
+import { Entry } from "@/entries/entry"
 import { encrypt, cipherBufferToString } from "@/crypto"
-import {updatePaperTodos} from "@/todos"
+import {updateTodos} from "@/entries/todos/todos"
 
 const autosave = true
 let autosaveIntervalId: number | null = null
@@ -33,17 +33,17 @@ loadMathjax(1000)
 
 @Component({components: {NavIcon, Markdown}})
 export default class MdText extends Vue {
-  @Prop() private paper!: PaperData
+  @Prop() private entry!: Entry
   @Prop() private password!: string | null
   text = ""
   textVisible = true
   renderVisible = true
 
   async created() {
-    this.text = this.paper.abstract
+    this.text = this.entry.notes
     if (autosave) {
       autosaveIntervalId = setInterval(() => {
-        this.savePaper(true)
+        this.saveEntry(true)
       }, 15_000)
     }
 
@@ -87,15 +87,15 @@ export default class MdText extends Vue {
     document.documentElement.classList.remove("overflow-hidden")
   }
 
-  @Watch("paper")
-  onPaperChanged(newPaper: PaperData, oldPaper: PaperData) {
-    this.text = newPaper.abstract
+  @Watch("entry")
+  onEntryChanged(newEntry: Entry, oldEntry: Entry) {
+    this.text = newEntry.notes
   }
   @Watch("password")
   onPasswordChanged(newPassword: string | null, oldPassword: string | null) {
     if (newPassword !== null) {
       this.password = newPassword
-      this.savePaper(false)
+      this.saveEntry(false)
     }
   }
 
@@ -106,26 +106,26 @@ export default class MdText extends Vue {
       this.renderVisible = !this.renderVisible
     }
   }
-  async savePaper(autosave: boolean) {
+  async saveEntry(autosave: boolean) {
     if (!autosave) {
       this.$emit("saveStart")
     }
-    if (this.paper.iv !== undefined) {
+    if (this.entry.iv !== undefined) {
       if (this.password === null) {
-        console.log("Can't save paper; iv is defined but no password.")
+        console.log("Can't save entry; iv is defined but no password.")
         return
       }
       const {iv, ciphertext} = await encrypt(this.text, this.password)
-      this.paper.iv = iv
-      this.paper.abstract = cipherBufferToString(ciphertext)
+      this.entry.iv = iv
+      this.entry.notes = cipherBufferToString(ciphertext)
     } else {
-      this.paper.abstract = this.text
+      this.entry.notes = this.text
     }
-    await DB.papers.put(this.paper)
-    await updatePaperTodos(this.paper)
+    await DB.table(this.entry.table).put(this.entry)
+    await updateTodos(this.entry)
     if (!autosave) {
       // Saving is actually very fast, but I want the user to see something indicating
-      // the paper was saved, so delay a little to make the progress circle visible.
+      // the entry was saved, so delay a little to make the progress circle visible.
       setTimeout(() => {
         this.$emit("saveEnd")
       }, 300)
