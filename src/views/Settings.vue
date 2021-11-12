@@ -177,7 +177,7 @@ export default class Settings extends Vue {
       for (const entry of modifiedEntries) {
         updateTodos(entry) // so the todos' tags will still match the entry's
       }
-    })
+    }
 
     this.snackbarMsg = `Renamed ${this.oldTag} -> ${this.newTag} in ${nModified} papers.`
     this.oldTag = ""

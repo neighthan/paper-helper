@@ -134,13 +134,6 @@ import {updateTodos, deleteTodos, ToDo} from "@/entries/todos/todos"
 
 const DROPBOX_PATH = "/paper-helper-db.json"
 
-// convenience data for each entry recreated each time; maybe make this computed on
-// Entry? (after making Entry a class)
-type EntryTempDatum = {
-  search_string: string,
-  search_tags: Set<string>,
-}
-
 const PaperTypes = {
   key: <"paper"> "paper",
   component: <"PaperDialog"> "PaperDialog",
@@ -164,7 +157,6 @@ type ValueOf<T> = T[keyof T]
 export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   done_loading = false
   cachedEntries: {[key: string]: E["class"]} = {}
-  entryTempData: {[key: string]: EntryTempDatum} = {}
   query = ""
   query_tags = ""
   deletedEntry: E["class"] | null = null
@@ -289,10 +281,6 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   }
   async addEntry(entry: E["class"]) {
     Vue.set(this.cachedEntries, entry.id, entry)
-    this.entryTempData[entry.id] = {
-      search_string: `${entry.title.toLowerCase()} ${entry.notes.toLowerCase()}`,
-      search_tags: getPrefixSet(entry.tags),
-    }
   }
   updatePriority(entry: E["class"], priority: number) {
     entry.priority = priority
@@ -418,26 +406,16 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     let data = Object.values(this.cachedEntries)
     if (this.query_tags != "") {
       const query_tags = this.query_tags.toLowerCase().split(" ")
-      data = data.filter(e => query_tags.every(tag => this.entryTempData[e.id].search_tags.has(tag)))
+      data = data.filter(e => query_tags.every(tag => e.searchTags.has(tag)))
     }
     if (this.query != "") {
       const query = this.query.toLowerCase()
-      data = data.filter(e => this.entryTempData[e.id].search_string.includes(query))
+      data = data.filter(e => e.searchString.includes(query))
     }
     return data.sort((e1, e2) => e2.priority - e1.priority)
   }
 }
 
-
-function getPrefixSet(tags: string[]) {
-  const prefixes = new Set([""])
-  for (let tag of tags.map(tag => tag.toLowerCase())) {
-    for (let i = 1; i <= tag.length; i++) {
-      prefixes.add(tag.slice(0, i))
-    }
-  }
-  return prefixes
-}
 
 async function loadFromDB<E extends ValueOf<typeof EntryTypes>>(
   vue: Home<E>, db: PapersDb, queryId: string
@@ -470,12 +448,6 @@ async function loadFromDB<E extends ValueOf<typeof EntryTypes>>(
     }
     return false
   }) as typeof entries
-  entries.forEach(e => {
-    vue.entryTempData[e.id] = {
-      search_string: `${e.title.toLowerCase()} ${e.notes.toLowerCase()}`,
-      search_tags: getPrefixSet(e.tags),
-    }
-  })
   vue.cachedEntries = Object.fromEntries(entries.map(e => [e.id, e]))
   vue.done_loading = true
 }

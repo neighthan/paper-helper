@@ -15,6 +15,24 @@ class Entry {
   get dateString() {
     return new Date((<any> this).date || this.time_added).toLocaleString("default", {month: "short", year: "numeric"})
   }
+
+  get searchString() {
+    return `${this.title.toLowerCase()} ${this.notes.toLowerCase()}`
+  }
+
+  get searchTags() {
+    return getPrefixSet(this.tags)
+  }
+}
+
+function getPrefixSet(tags: string[]) {
+  const prefixes = new Set([""])
+  for (let tag of tags.map(tag => tag.toLowerCase())) {
+    for (let i = 1; i <= tag.length; i++) {
+      prefixes.add(tag.slice(0, i))
+    }
+  }
+  return prefixes
 }
 
 export {Entry}
