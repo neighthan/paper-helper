@@ -15,12 +15,10 @@
             <v-text-field label="Priority" v-model="priority" dense></v-text-field>
           </v-col>
           <v-col>
-            <v-text-field label="Date (YYYY/MM/DD)" v-model="date" dense></v-text-field>
+            <v-text-field label="Deadline (YYYY/MM/DD)" v-model="deadline" dense></v-text-field>
           </v-col>
         </v-row>
-        <v-textarea label="Abstract" v-model="abstract" rows=11 no-resize dense></v-textarea>
-        <v-text-field label="Authors" v-model="authors" dense></v-text-field>
-        <v-text-field label="URL" v-model="url" dense></v-text-field>
+        <v-textarea label="Notes" v-model="notes" rows=11 no-resize dense></v-textarea>
       </v-card-text>
 
       <v-divider></v-divider>
@@ -53,7 +51,6 @@ export default class ToDoDialog extends Vue {
   url = ""
   tags: string[] = []
   priority = "0"
-  authors = ""
   notes = ""
   deadline = ""
   lastSyncTime = -1
