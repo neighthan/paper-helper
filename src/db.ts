@@ -162,8 +162,13 @@ class PapersDb extends Dexie {
           delete paper.abstract
           paper.table = "papers"
         })
-        trans.table("todos").toCollection().modify(todo => {
+        trans.table("todos").toCollection().modify((todo: ToDo) => {
           todo.table = "todos"
+        })
+      })
+      this.version(8).upgrade(trans => {
+        trans.table("savedQueries").toCollection().modify((query: SavedQuery) => {
+          query.entryType = "papers"
         })
       })
       this.papers = this.table('papers')
