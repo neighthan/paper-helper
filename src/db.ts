@@ -171,6 +171,11 @@ class PapersDb extends Dexie {
           query.entryType = "papers"
         })
       })
+      this.version(9).upgrade(trans => {
+        trans.table("savedQueries").toCollection().modify((query: SavedQuery) => {
+          query.entryType = "paper"
+        })
+      })
       this.papers = this.table('papers')
       this.meta = this.table('meta')
       this.meta.mapToClass(Meta)
