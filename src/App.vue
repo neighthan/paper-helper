@@ -32,7 +32,9 @@ export default class App extends Vue {
     const vue = this
     function kbShortcuts(e: KeyboardEvent) {
       if (e.ctrlKey && e.key == "h") {
-        vue.$router.push("/")
+        if (vue.$router.currentRoute.path !== "/") {
+          vue.$router.push("/")
+        }
         e.preventDefault() // open chrome history
       } else if (e.ctrlKey && e.key == "b") {
         vue.$root.$emit("toggleNav")
