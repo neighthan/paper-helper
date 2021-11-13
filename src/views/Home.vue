@@ -51,7 +51,7 @@ import NavIcon from "@/components/NavIcon.vue"
 import {DB, getMeta, SavedQuery} from "../db"
 import {genId} from "../utils"
 import SavedQueryDialog from "@/components/SavedQueryDialog.vue"
-
+import {entryTypes} from "@/entries/entries"
 
 @Component({components: {NavIcon, SavedQueryDialog}})
 export default class Home extends Vue {
@@ -67,18 +67,20 @@ export default class Home extends Vue {
     let queries = await DB.savedQueries.toArray()
     this.savedQueries = Object.fromEntries(queries.map(q => [q.id, q]))
     if (Object.keys(this.savedQueries).length === 0) {
-      let query: SavedQuery = {
-        name: "All",
-        tags: [],
-        searchString: "",
-        id: genId(),
-        timeAdded: Date.now(),
-        lastSyncTime: -1,
-        lastModifiedTime: +new Date(),
-        entryType: "paper",
+      for (const entryType of entryTypes) {
+        let query: SavedQuery = {
+          name: `All ${entryType}s`,
+          tags: [],
+          searchString: "",
+          id: genId(),
+          timeAdded: Date.now(),
+          lastSyncTime: -1,
+          lastModifiedTime: Date.now(),
+          entryType: entryType,
+        }
+        DB.savedQueries.put(query)
+        Vue.set(this.savedQueries, query.id, query)
       }
-      DB.savedQueries.put(query)
-      Vue.set(this.savedQueries, query.id, query)
     }
     getMeta(DB).then(meta => {
       this.allTags = meta.tags

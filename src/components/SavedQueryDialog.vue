@@ -6,7 +6,7 @@
         <v-combobox label="Tags" v-model="tags" :items="allTags" multiple :delimiters="[' ']" dense small-chips>
         </v-combobox>
         <v-text-field label="Search String" v-model="searchString" dense></v-text-field>
-        <v-text-field label="Entry Type" v-model="entryType" dense></v-text-field>
+        <v-autocomplete label="Entry Type" v-model="entryType" dense :items="entryTypes"></v-autocomplete>
       </v-card-text>
 
       <v-divider></v-divider>
@@ -27,6 +27,7 @@
 <script lang="ts">
 import { Component, Prop, Vue, Watch } from "vue-property-decorator"
 import {SavedQuery} from "@/db"
+import {entryTypes} from "@/entries/entries"
 
 @Component
 export default class SavedQueryDialog extends Vue {
@@ -39,6 +40,7 @@ export default class SavedQueryDialog extends Vue {
   timeAdded = -1
   lastSyncTime = -1
   entryType = "paper"
+  entryTypes = entryTypes
 
   created() {
     if (this.initialData) {

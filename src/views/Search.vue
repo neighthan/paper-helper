@@ -179,6 +179,10 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
 
   async created() {
     this.entryKey = <any> (await DB.savedQueries.get(this.queryId))!.entryType
+    if (EntryTypes[this.entryKey] === undefined) {
+      console.error(`No entry type with key ${this.entryKey}!`)
+      return
+    }
     // use an object / map instead of if-else once things are working
     this.entryTable = EntryTypes[this.entryKey].table
     this.EntryClass = EntryTypes[this.entryKey].ctor
