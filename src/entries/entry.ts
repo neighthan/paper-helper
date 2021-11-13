@@ -23,6 +23,19 @@ class Entry {
   get searchTags() {
     return getPrefixSet(this.tags)
   }
+
+  get notesMd() {
+    return this.notes
+  }
+  set notesMd(md: string) {
+    this.notes = md
+  }
+  get expansionItemMd() {
+    return this.notesMd
+  }
+  set expansionItemMd(md: string) {
+    this.notesMd = md
+  }
 }
 
 function getPrefixSet(tags: string[]) {

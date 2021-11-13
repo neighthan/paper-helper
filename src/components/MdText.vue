@@ -40,7 +40,7 @@ export default class MdText extends Vue {
   renderVisible = true
 
   async created() {
-    this.text = this.entry.notes
+    this.text = this.entry.notesMd
     if (autosave) {
       autosaveIntervalId = setInterval(() => {
         this.saveEntry(true)
@@ -89,7 +89,7 @@ export default class MdText extends Vue {
 
   @Watch("entry")
   onEntryChanged(newEntry: Entry, oldEntry: Entry) {
-    this.text = newEntry.notes
+    this.text = newEntry.notesMd
   }
   @Watch("password")
   onPasswordChanged(newPassword: string | null, oldPassword: string | null) {
@@ -117,9 +117,9 @@ export default class MdText extends Vue {
       }
       const {iv, ciphertext} = await encrypt(this.text, this.password)
       this.entry.iv = iv
-      this.entry.notes = cipherBufferToString(ciphertext)
+      this.entry.notesMd = cipherBufferToString(ciphertext)
     } else {
-      this.entry.notes = this.text
+      this.entry.notesMd = this.text
     }
     await DB.table(this.entry.table).put(this.entry)
     await updateTodos(this.entry)
