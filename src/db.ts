@@ -120,7 +120,10 @@ type DeletedEntry = {
 
 // WARNING - mapToClass doesn't actually call the class constructor, so default
 // fields that don't already exist on an entry won't be added. See
-// https://dexie.org/docs/Table/Table.mapToClass() for more info.
+// https://dexie.org/docs/Table/Table.mapToClass() or
+// https://github.com/dfahlander/Dexie.js/issues/827#issuecomment-481590203
+// for more info. It just sets the prototype of the object,
+// so instanceof and class methods will work fine.
 class PapersDb extends Dexie {
   papers: Dexie.Table<PaperData, string>
   meta: Dexie.Table<Meta, number>
@@ -178,11 +181,14 @@ class PapersDb extends Dexie {
       })
       this.papers = this.table('papers')
       this.meta = this.table('meta')
-      this.meta.mapToClass(Meta)
       this.imgs = this.table('imgs')
       this.savedQueries = this.table("savedQueries")
       this.deletedEntries = this.table("deletedEntries")
       this.todos = this.table("todos")
+
+      this.meta.mapToClass(Meta)
+      this.papers.mapToClass(PaperData)
+      this.todos.mapToClass(ToDo)
   }
 }
 

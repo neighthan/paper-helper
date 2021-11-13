@@ -16,10 +16,15 @@ class ToDo extends Entry{
   deadline = ""
   table = "todos"
 
-  asString() {
+  /**
+   * @param entry used to determine which tags are from the entry and shouldn't be
+   *   included in the todo's string version.
+   */
+  asString(entry: Entry) {
     let entryString = "@TODO"
-    if (this.tags.length) {
-      entryString += `[${this.tags.join(", ")}]`
+    const tags = this.tags.filter(t => !entry.tags.includes(t))
+    if (tags.length) {
+      entryString += `[${tags.join(", ")}]`
     }
     entryString += `{${this.priority}}`
     if (this.deadline) {
@@ -27,7 +32,7 @@ class ToDo extends Entry{
     }
     entryString += ` ${this.title}`
     if (this.notes) {
-      entryString += `{{${this.notes}}}`
+      entryString += ` {{${this.notes}}}`
     }
     return entryString
   }
@@ -47,10 +52,14 @@ class ToDo extends Entry{
   async _update(mode: typeof REMOVE | typeof RESTORE | typeof UPDATE) {
     if (!this.entryId) return
     const entry = <Entry> await DB.table(this.entryTable).get(this.entryId)
-    const todoString = this.asString()
+    const todoString = this.asString(entry)
     const lines = entry.notes.split("\n")
     if (!lines[this.entryStartLine].toLowerCase().startsWith("@todo")) {
       console.error(`Expected a todo on line ${this.entryStartLine} of`, entry)
+      return
+    }
+    if (!(this.entryEndLine === this.entryStartLine || lines[this.entryEndLine].endsWith("}}"))) {
+      console.error(`End line ${lines[this.entryEndLine]} at ${this.entryEndLine} didn't end with "}}".`)
       return
     }
 
@@ -78,7 +87,7 @@ class ToDo extends Entry{
     }
 
     // the length of this ToDo might have changed, so update the end line
-    this.entryEndLine = this.entryStartLine + todoString.split("\n").length
+    this.entryEndLine = this.entryStartLine + todoString.split("\n").length - 1
     DB.transaction("rw", DB.todos, DB.table(this.entryTable), async () => {
       DB.todos.put(this)
       DB.table(this.entryTable).put(entry)

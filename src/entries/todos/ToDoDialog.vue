@@ -57,6 +57,8 @@ export default class ToDoDialog extends Vue {
   showDialog = false
   entryId = ""
   entryTable = ""
+  entryStartLine = -1
+  entryEndLine = -1
 
   show(todo: ToDo) {
     this.updateFields(todo)
@@ -73,6 +75,8 @@ export default class ToDoDialog extends Vue {
     this.deadline = todo.deadline
     this.entryId = todo.entryId
     this.entryTable = todo.entryTable
+    this.entryStartLine = todo.entryStartLine
+    this.entryEndLine = todo.entryEndLine
   }
 
   get editedToDo() {
@@ -87,6 +91,8 @@ export default class ToDoDialog extends Vue {
     todo.lastModifiedTime = Date.now()
     todo.entryId = this.entryId
     todo.entryTable = this.entryTable
+    todo.entryStartLine = this.entryStartLine
+    todo.entryEndLine = this.entryEndLine
     todo.table = "todos"
     return todo
   }
