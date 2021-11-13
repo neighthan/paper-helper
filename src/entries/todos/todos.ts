@@ -9,6 +9,22 @@ class ToDo extends Entry{
   entryTable = "" // name of the dexie table with the entry, if entryId given
   deadline = ""
   table = "todos"
+
+  getentryString() {
+    let entryString = "@TODO"
+    if (this.tags.length) {
+      entryString += `[${this.tags.join(", ")}]`
+    }
+    entryString += `{${this.priority}}`
+    if (this.deadline) {
+      entryString += `(${this.deadline})`
+    }
+    entryString += ` ${this.title}`
+    if (this.notes) {
+      entryString += `{{${this.notes}}}`
+    }
+    return entryString
+  }
 }
 
 // get all of the todos from the paper
