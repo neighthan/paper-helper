@@ -9,6 +9,15 @@ class ToDo extends Entry{
   entryTable = "" // name of the dexie table with the entry, if entryId given
   deadline = ""
   table = "todos"
+
+  // TS doesn't like overriding a property with an accessor
+  // @ts-ignore
+  get title() {
+    return this.notes.split("\n")[0]
+  }
+  set title(title: string) {
+    this.notes = title + this.notes.slice(this.notes.indexOf("\n"))
+  }
 }
 
 // get all of the todos from the paper
