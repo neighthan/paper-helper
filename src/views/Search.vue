@@ -204,6 +204,9 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
       DB.deletedEntries.add({id: entry.id, lastSyncTime: entry.lastSyncTime})
     }
     Vue.delete(this.cachedEntries, entry.id)
+    if (entry instanceof ToDo) {
+      entry.removeFromEntry()
+    }
   }
   undeleteEntry() {
     this.show_undelete_snackbar = false
@@ -212,6 +215,9 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
       updateTodos(this.deletedEntry)
       DB.deletedEntries.delete(this.deletedEntry.id)
       Vue.set(this.cachedEntries, this.deletedEntry.id, this.deletedEntry)
+      if (this.deletedEntry instanceof ToDo) {
+        this.deletedEntry.restoreToEntry()
+      }
     }
   }
   addNotes(entry: E["class"]) {
@@ -292,6 +298,9 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     // E["class"] and E["table"] are always compatible
     this.entryTable.put(<any> entry)
     updateTodos(entry) // so the todos' priorities will match the entry's
+    if (entry instanceof ToDo) {
+      entry.updateInEntry()
+    }
   }
   async syncDropbox(promptForToken: boolean=true) {
     // all entries have IDs; check if the current Entry subtype is also syncable (so that

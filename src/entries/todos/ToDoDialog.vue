@@ -107,6 +107,7 @@ export default class ToDoDialog extends Vue {
       DB.todos.put(todo)
       meta.tags = [...new Set(meta.tags.concat(todo.tags))]
     })
+    todo.updateInEntry()
     this.$emit("addEntry", todo)
   }
 }

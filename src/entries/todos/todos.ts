@@ -1,16 +1,22 @@
 import {Entry} from "@/entries/entry"
 import {DB} from "@/db"
 
+const REMOVE = 0
+const RESTORE = 1
+const UPDATE = 2
+
 // don't sync to dbx; instead, just recompute the todos after you finish
 // dbx syncing (if you want to be faster, only for the papers that've
 // been modified)
 class ToDo extends Entry{
   entryId = "" // entry this todo was pulled from; empty if no entry
   entryTable = "" // name of the dexie table with the entry, if entryId given
+  entryStartLine = -1 // -1 means this ToDo didn't come from another entry
+  entryEndLine = -1
   deadline = ""
   table = "todos"
 
-  getentryString() {
+  asString() {
     let entryString = "@TODO"
     if (this.tags.length) {
       entryString += `[${this.tags.join(", ")}]`
@@ -24,6 +30,59 @@ class ToDo extends Entry{
       entryString += `{{${this.notes}}}`
     }
     return entryString
+  }
+
+  async removeFromEntry() {
+    this._update(REMOVE)
+  }
+
+  async restoreToEntry() {
+    this._update(RESTORE)
+  }
+
+  async updateInEntry() {
+    this._update(UPDATE)
+  }
+
+  async _update(mode: typeof REMOVE | typeof RESTORE | typeof UPDATE) {
+    if (!this.entryId) return
+    const entry = <Entry> await DB.table(this.entryTable).get(this.entryId)
+    const todoString = this.asString()
+    const lines = entry.notes.split("\n")
+    if (!lines[this.entryStartLine].toLowerCase().startsWith("@todo")) {
+      console.error(`Expected a todo on line ${this.entryStartLine} of`, entry)
+      return
+    }
+
+    if (mode === REMOVE) {
+      // don't change the start and end lines. If the ToDo is really completed / deleted,
+      // it'll be removed anyway, so it doesn't matter. If the deletion is undone, we'll
+      // need the start line to know where to insert it back in.
+      entry.notes = (
+        lines.slice(0, this.entryStartLine)
+        .concat(lines.slice(this.entryEndLine + 1))
+      ).join("\n")
+    } else if (mode === RESTORE) {
+      entry.notes = (
+        lines.slice(0, this.entryStartLine)
+        .concat(todoString)
+        .concat(lines.slice(this.entryStartLine))
+      ).join("\n")
+    } else {
+      // test this
+      entry.notes = (
+        lines.slice(0, this.entryStartLine)
+        .concat(todoString)
+        .concat(lines.slice(this.entryEndLine + 1))
+      ).join("\n")
+    }
+
+    // the length of this ToDo might have changed, so update the end line
+    this.entryEndLine = this.entryStartLine + todoString.split("\n").length
+    DB.transaction("rw", DB.todos, DB.table(this.entryTable), async () => {
+      DB.todos.put(this)
+      DB.table(this.entryTable).put(entry)
+    })
   }
 }
 
@@ -44,6 +103,7 @@ function getTodos(entry: Entry) {
     if (!line.toLowerCase().startsWith("@todo")) continue
     line = line.substring(5)
     const todo = new ToDo()
+    todo.entryStartLine = i - 1
     todo.tags = [...entry.tags]
     todo.priority = entry.priority
     if (line.startsWith("[")) {
@@ -75,6 +135,7 @@ function getTodos(entry: Entry) {
     } else {
       todo.title = line
     }
+    todo.entryEndLine = i - 1
     todo.entryId = entry.id
     todo.entryTable = entry.table
     todos.push(todo)

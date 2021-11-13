@@ -24,7 +24,7 @@ import {clearImgCache, getMarkdownForImg} from "../markdown"
 import {loadMathjax} from "../mathjax"
 import { Entry } from "@/entries/entry"
 import { encrypt, cipherBufferToString } from "@/crypto"
-import {updateTodos} from "@/entries/todos/todos"
+import {ToDo, updateTodos} from "@/entries/todos/todos"
 
 const autosave = true
 let autosaveIntervalId: number | null = null
@@ -123,6 +123,9 @@ export default class MdText extends Vue {
     }
     await DB.table(this.entry.table).put(this.entry)
     await updateTodos(this.entry)
+    if (this.entry instanceof ToDo) {
+      this.entry.updateInEntry()
+    }
     if (!autosave) {
       // Saving is actually very fast, but I want the user to see something indicating
       // the entry was saved, so delay a little to make the progress circle visible.
