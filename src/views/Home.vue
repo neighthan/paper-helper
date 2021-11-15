@@ -108,10 +108,13 @@ export default class Home extends Vue {
     this.editingQuery = query
     this.dialog = true
   }
-  remove(query: SavedQuery) {
+  async remove(query: SavedQuery) {
     this.deletedQuery = query
     this.showUndeleteSnackbar = true
-    DB.savedQueries.delete(query.id)
+    await DB.transaction("rw", DB.savedQueries, DB.deletedEntries, trans => {
+      DB.savedQueries.delete(query.id)
+      DB.deletedEntries.add({id: query.id, lastSyncTime: query.lastSyncTime})
+    })
     Vue.delete(this.savedQueries, query.id)
   }
   undeleteQuery() {
