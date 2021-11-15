@@ -112,7 +112,7 @@ export default class PaperDialog extends Vue {
       updateTodos(paper)
       meta.tags = [...new Set(meta.tags.concat(paper.tags))]
     })
-    this.$emit("addPaper", paper)
+    this.$emit("addEntry", paper)
   }
 }
 </script>
