@@ -44,9 +44,21 @@ function includeImgs(md: string, callback?: any) {
   return md
 }
 
+function addMergeConflictStyling(md: string, callback?: any) {
+  const lines = md.split("\n")
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (line.startsWith("!~")) {
+      lines[i] = `<div style="color: red">${line.slice(2)}</div>`
+    }
+  }
+  return lines.join("\n")
+}
+
 
 function processMdBeforeRender(md: string, callback?: any) {
   md = includeImgs(md, callback)
+  md = addMergeConflictStyling(md, callback)
   // md = addCollapsers(md)
   return md
 }
