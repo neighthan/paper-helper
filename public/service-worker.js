@@ -7,8 +7,16 @@ self.addEventListener('message', (event) => {
     self.skipWaiting()
     return
   }
+  if (event.data.type == "logMsg") {
+    console.log(event.data.msg)
+    return
+  }
   if (event.data.type == "syncDbx") {
-    event.data.callback()
+    console.log("called syncDbx!")
+    const db = event.data.db
+    const todo = await db.todos.toCollection().first()
+    console.log(todo)
+    return
   }
 })
 
