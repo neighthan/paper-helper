@@ -16,8 +16,6 @@ import {logger} from "@/logger"
 import PaperDialog from "@/entries/papers/PaperDialog.vue"
 import {PaperData} from "@/entries/papers/paper"
 
-navigator.serviceWorker.controller?.postMessage({type: "syncDbx", callback: () => {console.log("called from SW!")}})
-
 @Component({components: {NavDrawer, PaperDialog}})
 export default class App extends Vue {
   async created() {
@@ -45,6 +43,10 @@ export default class App extends Vue {
       }
     }
     document.addEventListener("keydown", kbShortcuts)
+    navigator.serviceWorker.controller?.postMessage({type: "syncDbx", callback: () => {console.log("called from SW!")}})
+    window.addEventListener("beforeunload", event => {
+      navigator.serviceWorker.controller?.postMessage({type: "syncDbx", callback: () => {console.log("calling SW beforeunload")}})
+    })
   }
 }
 </script>
