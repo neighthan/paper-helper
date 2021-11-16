@@ -4,6 +4,7 @@ import {DB, getMeta} from "./db"
 import { Entry } from "./entries/entry"
 import {logger} from "./logger"
 import {mergeTexts} from "./utils"
+import {entryTypes} from "@/entries/entries"
 
 const DROPBOX_PATH = "/paper-helper-db.json"
 
@@ -235,4 +236,10 @@ async function _dbUpload(entryTable: Dexie.Table<Entry, string>, meta: Meta) {
   })
 }
 
-export {syncDropbox}
+async function syncAllDropbox(promptForToken: boolean=true) {
+  for (const entryType of entryTypes) {
+    await syncDropbox(DB.table(entryType), promptForToken)
+  }
+}
+
+export {syncDropbox, syncAllDropbox}

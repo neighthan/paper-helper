@@ -15,7 +15,7 @@ import {DB, getMeta} from "@/db"
 import {logger} from "@/logger"
 import PaperDialog from "@/entries/papers/PaperDialog.vue"
 import {PaperData} from "@/entries/papers/paper"
-import {syncDropbox} from "@/dbx"
+import {syncAllDropbox} from "@/dbx"
 
 @Component({components: {NavDrawer, PaperDialog}})
 export default class App extends Vue {
@@ -44,8 +44,19 @@ export default class App extends Vue {
       }
     }
     document.addEventListener("keydown", kbShortcuts)
+
+    syncAllDropbox().then(() => {
+      console.log("Dropbox synced.")
+    })
+
     navigator.serviceWorker.controller?.postMessage({type: "logMsg", msg: "called from SW!"})
     window.addEventListener("beforeunload", event => {
+      event.preventDefault()
+      event.returnValue = ""
+      syncAllDropbox(false).then(() => {
+        console.log("Dropbox synced.")
+      })
+      navigator.serviceWorker.controller?.postMessage({type: "logMsg", msg: "SW: beforeunload"})
       navigator.serviceWorker.controller?.postMessage({type: "syncDbx", db: DB})
     })
   }
