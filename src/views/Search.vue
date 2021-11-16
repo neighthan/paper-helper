@@ -129,25 +129,9 @@ import {DB, PapersDb, Meta, getMeta, exportDB} from "../db"
 import {syncDropbox} from "../dbx"
 import {getPaperFromArxiv, getDataFromYouTube} from "../utils"
 import {updateTodos, deleteTodos, ToDo} from "@/entries/todos/todos"
+import {EntryTypes} from "@/entries/entries"
 
-const PaperTypes = {
-  key: <"paper"> "paper",
-  component: <"PaperDialog"> "PaperDialog",
-  table: DB.papers,
-  class: new PaperData(),
-  ctor: PaperData,
-}
-
-const TodoTypes = {
-  key: <"todo"> "todo",
-  component: <"ToDoDialog"> "ToDoDialog",
-  table: DB.todos,
-  class: new ToDo(),
-  ctor: ToDo,
-}
-const EntryTypes = {paper: PaperTypes, todo: TodoTypes}
 type ValueOf<T> = T[keyof T]
-
 
 @Component({components: {PaperDialog, ToDoDialog, ExpansionItem, NavIcon}})
 export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
