@@ -13,12 +13,15 @@ self.addEventListener('message', (event) => {
   }
   if (event.data.type == "syncDbx") {
     console.log("called syncDbx!")
-    const db = event.data.db
-    const todo = await db.todos.toCollection().first()
-    console.log(todo)
+    syncDbx(event.data.db)
     return
   }
 })
+
+async function syncDbx(db) {
+  const todo = await db.todos.toCollection().first()
+  console.log(todo)
+}
 
 // The workboxSW.precacheAndRoute() method efficiently caches and responds to
 // requests for URLs in the manifest. See https://goo.gl/S9QRab
