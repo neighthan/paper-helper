@@ -148,76 +148,73 @@ async function updateDBFromDropbox<T extends Syncable & HasId>(
   return `Synced ${dexieTable.name}. # Added: ${nAdded}; # Deleted: ${nDeleted}; # Merged: ${nMerged}`
 }
 
-async function syncDropbox(entryTable: Dexie.Table<Entry, string>, promptForToken: boolean=true) {
+async function syncDropbox(entryTables: Dexie.Table<Entry, string>[], promptForToken: boolean=true) {
   const startTime = Date.now()
-  // all entries have IDs; check if the current Entry subtype is also syncable (so that
-  // the call to updateDBFromDropbox will work and to show that syncing is desired)
-  const entry = await entryTable.toCollection().first()
-  if (entry === undefined) {
-    console.log("No entries to sync.")
-    return
-  }
-  if (entry.lastSyncTime === undefined) {
-    console.log(
-      `Entries from table ${entryTable.name} have no lastSyncTime; skipping.`
-    )
-    return
-  }
   const meta = await getMeta(DB)
   if (!meta.dropboxToken) {
     // TODO: make this nicer
-    if (!promptForToken) return
+    if (!promptForToken) return ["No saved Dropbox token."]
     let token =  prompt("Enter your dropbox token")
     if (!token) {
-      return
+      return ["No Dropbox token given."]
     }
     meta.dropboxToken = token
   }
   const dbx = new Dropbox({accessToken: meta.dropboxToken})
 
-  let dbxSnackbarMsg: string
+  const msgs: string[] = []
+  let response
   try {
-    let response = await dbx.filesDownload({path: DROPBOX_PATH})
-    let dbxJsonBlob = (<Blob> (<any> response.result).fileBlob)
-    const json = JSON.parse(await dbxJsonBlob.text())
-    const tables = json.data.data
-
-    const entryMergeCallback = (newEntry: Entry, oldEntry: Entry) => {
-      if (oldEntry.notes !== newEntry.notes) {
-        newEntry.tags.push("merge-conflict")
-        newEntry.notes = mergeTexts(newEntry.notes, oldEntry.notes, "!~")
-        newEntry.lastModifiedTime = Date.now()
-      }
-    }
-    // TODO: when snackbar goes away, show a new snackbar with this message
-    const querySnackbarMsg = await updateDBFromDropbox(tables, DB.savedQueries)
-    dbxSnackbarMsg = await updateDBFromDropbox(tables, <any> entryTable, <any> entryMergeCallback)
-
-    await _dbUpload(entryTable, meta)
-    await DB.deletedEntries.clear()
+    response = await dbx.filesDownload({path: DROPBOX_PATH})
   } catch (error) {
-    console.error("No file found.")
+    console.error("Error while trying to download from Dropbox:")
     console.error(error)
-    await _dbUpload(entryTable, meta)
-    dbxSnackbarMsg = "No data found on Dropbox; uploaded local data."
+    await _dbUpload(entryTables, meta)
+    return ["No data found on Dropbox; uploaded local data."]
   }
-  console.log(`Syncing took ${(Date.now() - startTime) / 1000} seconds.`)
-  // this.showDbxSnackbar = true
-  return dbxSnackbarMsg
+  let dbxJsonBlob = (<Blob> (<any> response.result).fileBlob)
+  const json = JSON.parse(await dbxJsonBlob.text())
+  const tables = json.data.data
+
+  const entryMergeCallback = (newEntry: Entry, oldEntry: Entry) => {
+    if (oldEntry.notes !== newEntry.notes) {
+      newEntry.tags.push("merge-conflict")
+      newEntry.notes = mergeTexts(newEntry.notes, oldEntry.notes, "!~")
+      newEntry.lastModifiedTime = Date.now()
+    }
+  }
+  msgs.push(await updateDBFromDropbox(tables, DB.savedQueries))
+
+  for (const entryTable of entryTables) {
+    // all entries have IDs; check if the current Entry subtype is also syncable (so that
+    // the call to updateDBFromDropbox will work and to show that syncing is desired)
+    const entry = await entryTable.toCollection().first()
+    if (entry === undefined) {
+      msgs.push(`No entries to sync for table ${entryTable.name}.`)
+      continue
+    }
+    if (entry.lastSyncTime === undefined) {
+      msgs.push(`Entries from table ${entryTable.name} have no lastSyncTime; skipping.`)
+      continue
+    }
+    msgs.push(await updateDBFromDropbox(tables, <any> entryTable, <any> entryMergeCallback))
+  }
+  await _dbUpload(entryTables, meta)
+  await DB.deletedEntries.clear()
+  msgs.push(`Syncing took ${(Date.now() - startTime) / 1000} seconds.`)
+  return msgs
 }
 
 // only call this from syncDropbox!
-async function _dbUpload(entryTable: Dexie.Table<Entry, string>, meta: Meta) {
+async function _dbUpload(entryTables: Dexie.Table<Entry, string>[], meta: Meta) {
   // only update the sync time for entries which have been modified
   const syncTime = Date.now()
-  try {
+  for (const entryTable of entryTables) {
     await entryTable.toCollection().modify(entry => {
       if (entry.lastModifiedTime > <number> entry.lastSyncTime) {
         entry.lastSyncTime = syncTime
       }
     })
-  } catch (error) {
-    console.error(error)
   }
   const jsonBlob = await exportDB(DB)
   const jsonStr = await jsonBlob.text()
@@ -226,20 +223,16 @@ async function _dbUpload(entryTable: Dexie.Table<Entry, string>, meta: Meta) {
     path: DROPBOX_PATH,
     contents: new File([jsonStr], "db.json", {type: "application/json"}),
     mode: {".tag": "overwrite"},
-  }).then((response) => {
+  }).then(() => {
     meta.lastSyncTime = Date.now()
-    console.log("Finished uploading.")
-    console.log(response)
   }).catch((error) => {
-    console.error("Error uploading!")
+    console.error("Error uploading to Dropbox!")
     console.error(error)
   })
 }
 
 async function syncAllDropbox(promptForToken: boolean=true) {
-  for (const entryType of Object.values(EntryTypes)) {
-    await syncDropbox(entryType.table, promptForToken)
-  }
+  await syncDropbox(Object.values(EntryTypes).map(t => t.table), promptForToken)
 }
 
 export {syncDropbox, syncAllDropbox}

@@ -64,7 +64,7 @@
 
           <v-tooltip open-delay="1000">
             <template v-slot:activator="{on}">
-              <v-btn icon v-on="on" @click="syncDropbox(entryTable)">
+              <v-btn icon v-on="on" @click="syncDropbox">
                 <v-icon>backup</v-icon>
               </v-btn>
             </template>
@@ -125,7 +125,7 @@ import ExpansionItem from "@/components/ExpansionItem.vue"
 import NavIcon from "@/components/NavIcon.vue"
 import {importInto} from "dexie-export-import"
 import {DB, PapersDb, Meta, getMeta, exportDB} from "../db"
-import {syncDropbox} from "../dbx"
+import {syncDropbox as syncDropbox_} from "../dbx"
 import {getPaperFromArxiv, getDataFromYouTube} from "../utils"
 import {updateTodos, deleteTodos, ToDo} from "@/entries/todos/todos"
 import {EntryTypes} from "@/entries/entries"
@@ -155,7 +155,6 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   entryTable!: E["table"]
   EntryClass!: E["ctor"]
   entryComponent: E["component"] = "PaperDialog"
-  syncDropbox = syncDropbox
 
   async created() {
     this.entryKey = <any> (await DB.savedQueries.get(this.queryId))!.entryType
@@ -230,6 +229,13 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
       data.tags.push(...this.query_tags.split(" "))
     }
     this.showEntryDialog(data)
+  }
+  async syncDropbox() {
+    const msgs = await syncDropbox_([this.entryTable])
+    this.showDbxSnackbar = true
+    for (const msg of msgs) {
+      this.dbxSnackbarMsg = msg
+    }
   }
   async download_data() {
     try {
