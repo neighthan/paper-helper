@@ -108,10 +108,6 @@
             Data deleted.
             <v-btn text color="red" @click="undeleteEntry">Undo</v-btn>
           </v-snackbar>
-          <v-snackbar v-model="showDbxSnackbar">
-            {{dbxSnackbarMsg}}
-            <v-btn text @click="goToMergeConflicts">Fix Merge Conflicts</v-btn>
-          </v-snackbar>
         </v-container>
       </v-main>
   </div>
@@ -129,6 +125,7 @@ import {syncDropbox as syncDropbox_} from "../dbx"
 import {getPaperFromArxiv, getDataFromYouTube} from "../utils"
 import {updateTodos, deleteTodos, ToDo} from "@/entries/todos/todos"
 import {EntryTypes} from "@/entries/entries"
+import {Snackable} from "@/components/Snackbar.vue"
 
 type ValueOf<T> = T[keyof T]
 
@@ -149,8 +146,6 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   queryName = ""
   queryTooltip = ""
   focusSearch = false
-  showDbxSnackbar = false
-  dbxSnackbarMsg = ""
   entryKey!: E["key"]
   entryTable!: E["table"]
   EntryClass!: E["ctor"]
@@ -232,13 +227,9 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   }
   async syncDropbox() {
     const msgs = await syncDropbox_([this.entryTable])
-    this.dbxSnackbarMsg = msgs[0]
-    this.showDbxSnackbar = true
-    for (let i = 1; i < msgs.length; i++) {
-      setTimeout(() => {
-        this.dbxSnackbarMsg = msgs[i]
-      }, 3000 * i)
-    }
+    ;(this.$root as unknown as Snackable).snackbar.show(
+      msgs, {timeoutMs: 3000, btnName: "Fix Merge Conflicts", callback: this.goToMergeConflicts}
+    )
   }
   async download_data() {
     try {

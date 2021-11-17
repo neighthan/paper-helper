@@ -232,7 +232,7 @@ async function _dbUpload(entryTables: Dexie.Table<Entry, string>[], meta: Meta) 
 }
 
 async function syncAllDropbox(promptForToken: boolean=true) {
-  await syncDropbox(Object.values(EntryTypes).map(t => t.table), promptForToken)
+  return await syncDropbox(Object.values(EntryTypes).map(t => t.table), promptForToken)
 }
 
 export {syncDropbox, syncAllDropbox}

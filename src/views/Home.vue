@@ -9,6 +9,14 @@
       </v-col>
       <v-spacer></v-spacer>
 
+      <v-tooltip open-delay="1000">
+        <template v-slot:activator="{on}">
+          <v-btn icon v-on="on" @click="syncDropbox">
+            <v-icon>backup</v-icon>
+          </v-btn>
+        </template>
+        <span>Sync to Dropbox</span>
+      </v-tooltip>
       <v-dialog v-model="dialog">
         <template v-slot:activator="{on, attrs}">
           <v-btn icon v-bind="attrs" v-on="on">
@@ -52,6 +60,8 @@ import {DB, getMeta, SavedQuery} from "../db"
 import {genId} from "../utils"
 import SavedQueryDialog from "@/components/SavedQueryDialog.vue"
 import {EntryTypes} from "@/entries/entries"
+import {syncAllDropbox} from "../dbx"
+import {Snackable} from "@/components/Snackbar.vue"
 
 @Component({components: {NavIcon, SavedQueryDialog}})
 export default class Home extends Vue {
@@ -129,6 +139,10 @@ export default class Home extends Vue {
     return queries
       .filter(q => q.name.toLowerCase().includes(this.search.toLowerCase()))
       .sort((q1, q2) => q1.name.localeCompare(q2.name))
+  }
+  async syncDropbox() {
+    const msgs = await syncAllDropbox()
+    ;(this.$root as unknown as Snackable).snackbar.show(msgs, {timeoutMs: 3000})
   }
 }
 </script>

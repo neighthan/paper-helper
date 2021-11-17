@@ -4,6 +4,7 @@
       <NavDrawer/>
       <PaperDialog ref="paperDialog"/>
       <router-view />
+      <Snackbar ref="snackbar"/>
     </v-app>
   </div>
 </template>
@@ -16,8 +17,9 @@ import {logger} from "@/logger"
 import PaperDialog from "@/entries/papers/PaperDialog.vue"
 import {PaperData} from "@/entries/papers/paper"
 import {syncAllDropbox} from "@/dbx"
+import Snackbar from "@/components/Snackbar.vue"
 
-@Component({components: {NavDrawer, PaperDialog}})
+@Component({components: {NavDrawer, PaperDialog, Snackbar}})
 export default class App extends Vue {
   async created() {
     const logLevel = (await getMeta(DB)).logLevel
@@ -30,6 +32,9 @@ export default class App extends Vue {
   }
 
   mounted() {
+    // Usage:
+    // ;(this.$root as unknown as Snackable).snackbar.show(msg)
+    ;(this.$root as any).snackbar = this.$refs.snackbar
     const vue = this
     function kbShortcuts(e: KeyboardEvent) {
       if (e.ctrlKey && e.key == "h") {
