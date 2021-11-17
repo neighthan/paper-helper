@@ -124,7 +124,6 @@ import ToDoDialog from "@/entries/todos/ToDoDialog.vue"
 import ExpansionItem from "@/components/ExpansionItem.vue"
 import NavIcon from "@/components/NavIcon.vue"
 import {importInto} from "dexie-export-import"
-import {PaperData} from "@/entries/papers/paper"
 import {DB, PapersDb, Meta, getMeta, exportDB} from "../db"
 import {syncDropbox} from "../dbx"
 import {getPaperFromArxiv, getDataFromYouTube} from "../utils"
@@ -156,6 +155,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   entryTable!: E["table"]
   EntryClass!: E["ctor"]
   entryComponent: E["component"] = "PaperDialog"
+  syncDropbox = syncDropbox
 
   async created() {
     this.entryKey = <any> (await DB.savedQueries.get(this.queryId))!.entryType
@@ -169,11 +169,6 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     this.entryComponent = EntryTypes[this.entryKey].component
 
     await loadFromDB(this, DB, this.queryId)
-    const syncThreshMs = this.meta.syncTimeThreshHours * 3600 * 1000
-    if (Date.now() - this.meta.lastSyncTime > syncThreshMs) {
-      console.log("Autosyncing with dropbox (if token is available).")
-      syncDropbox(this.entryTable, false)
-    }
   }
   deleteEntry(entry: E["class"]) {
     this.deletedEntry = entry

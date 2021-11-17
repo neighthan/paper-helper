@@ -13,7 +13,6 @@ class Meta {
   protected _redditClientSecret: string
   protected _redditUsername: string
   protected _lastSyncTime: number
-  protected _syncTimeThreshHours: number
   protected _logLevel: LogLevel
 
   constructor(
@@ -25,7 +24,6 @@ class Meta {
     redditClientSecret = "",
     redditUsername = "",
     lastSyncTime = -1,
-    syncTimeThreshHours = 24,
     logLevel: LogLevel = "debug",
   ) {
     this.id = id
@@ -36,7 +34,6 @@ class Meta {
     this._redditClientSecret = redditClientSecret
     this._redditUsername = redditUsername
     this._lastSyncTime = lastSyncTime
-    this._syncTimeThreshHours = syncTimeThreshHours
     this._logLevel = logLevel
   }
 
@@ -59,9 +56,6 @@ class Meta {
   get lastSyncTime() {
     return this._lastSyncTime
   }
-  get syncTimeThreshHours() {
-    return this._syncTimeThreshHours
-  }
   get logLevel() {
     return this._logLevel
   }
@@ -82,10 +76,6 @@ class Meta {
   }
   set lastSyncTime(lastSyncTime: number) {
     this._lastSyncTime = lastSyncTime
-    this._updateDb()
-  }
-  set syncTimeThreshHours(syncTimeThreshHours: number) {
-    this._syncTimeThreshHours = syncTimeThreshHours
     this._updateDb()
   }
   set logLevel(logLevel: LogLevel) {
