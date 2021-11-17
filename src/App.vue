@@ -48,17 +48,6 @@ export default class App extends Vue {
     syncAllDropbox().then(() => {
       console.log("Dropbox synced.")
     })
-
-    navigator.serviceWorker.controller?.postMessage({type: "logMsg", msg: "called from SW!"})
-    window.addEventListener("beforeunload", event => {
-      event.preventDefault()
-      event.returnValue = ""
-      syncAllDropbox(false).then(() => {
-        console.log("Dropbox synced.")
-      })
-      navigator.serviceWorker.controller?.postMessage({type: "logMsg", msg: "SW: beforeunload"})
-      // navigator.serviceWorker.controller?.postMessage({type: "syncDbx", db: DB})
-    })
   }
 }
 </script>
