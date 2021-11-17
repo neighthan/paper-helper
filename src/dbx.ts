@@ -201,7 +201,7 @@ async function syncDropbox(entryTables: Dexie.Table<Entry, string>[], promptForT
   }
   await _dbUpload(entryTables, meta)
   await DB.deletedEntries.clear()
-  msgs.push(`Syncing took ${(Date.now() - startTime) / 1000} seconds.`)
+  console.log(`Syncing took ${(Date.now() - startTime) / 1000} seconds.`)
   return msgs
 }
 

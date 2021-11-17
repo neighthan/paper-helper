@@ -232,9 +232,12 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   }
   async syncDropbox() {
     const msgs = await syncDropbox_([this.entryTable])
+    this.dbxSnackbarMsg = msgs[0]
     this.showDbxSnackbar = true
-    for (const msg of msgs) {
-      this.dbxSnackbarMsg = msg
+    for (let i = 1; i < msgs.length; i++) {
+      setTimeout(() => {
+        this.dbxSnackbarMsg = msgs[i]
+      }, 3000 * i)
     }
   }
   async download_data() {
