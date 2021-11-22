@@ -44,6 +44,7 @@ export default class Snackbar extends Vue {
     for (let i = 1; i < msgs.length; i++) {
       setTimeout(() => {
         this.msg = msgs[i]
+        this.showSnackbar = true
       }, i * this.timeoutMs)
     }
   }

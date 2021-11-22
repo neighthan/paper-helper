@@ -50,7 +50,7 @@ export default class App extends Vue {
     }
     document.addEventListener("keydown", kbShortcuts)
 
-    syncAllDropbox().then(() => {
+    syncAllDropbox(false).then(() => {
       console.log("Dropbox synced.")
     })
   }
