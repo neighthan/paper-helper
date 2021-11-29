@@ -80,7 +80,7 @@ async function mergeData<T extends Syncable & HasId>(
   for (let [id, dbxDatum] of dbxData) {
     if (localData.has(id)) {
       const localDatum = localData.get(id)!
-      if (localDatum.lastSyncTime == localDatum.lastModifiedTime) {
+      if (localDatum.lastSyncTime >= localDatum.lastModifiedTime) {
         // local hasn't been modified, so keep dbx version, if different
         if (dbxDatum.lastSyncTime > localDatum.lastSyncTime) {
           mergedData.push(dbxDatum)
