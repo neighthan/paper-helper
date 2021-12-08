@@ -151,6 +151,10 @@ async function updateDBFromDropbox<T extends Syncable & HasId>(
 async function syncDropbox(entryTables: Dexie.Table<Entry, string>[], promptForToken: boolean=true) {
   const startTime = Date.now()
   const meta = await getMeta(DB)
+  if (!meta.syncDropbox) {
+    console.log("Dropbox syncing is disabled; toggle in settings.")
+    return []
+  }
   if (!meta.dropboxToken) {
     // TODO: make this nicer
     if (!promptForToken) return ["No saved Dropbox token."]

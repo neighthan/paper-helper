@@ -21,7 +21,7 @@
           </v-card>
 
           <v-card>
-            <v-card-title>Log Level</v-card-title>
+            <v-card-title>Settings</v-card-title>
             <v-card-text>
               <v-select
                 label="Log Level"
@@ -29,6 +29,11 @@
                 :items="logLevels"
                 @input="updateLogLevel"
               ></v-select>
+              <v-checkbox
+                label="Sync with Dropbox"
+                v-model="syncDropbox"
+                @change="updateDbxSync"
+              ></v-checkbox>
             </v-card-text>
           </v-card>
 
@@ -97,7 +102,7 @@
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
-import {DB, getMeta} from "../db"
+import {DB, getMeta, Meta} from "../db"
 import { Entry } from "@/entries/entry"
 import { PaperData } from "@/entries/papers/paper"
 import getAllSavedPosts from "@/reddit"
@@ -121,28 +126,20 @@ export default class Settings extends Vue {
   logLevel: LogLevel = "silent"
   logLevels = logLevels
   devMode = (<any> window).webpackHotUpdate !== undefined
+  syncDropbox = false
+  meta: Meta | null = null
 
   async created() {
-    const meta = await getMeta(DB)
-    this.logLevel = meta.logLevel
+    this.meta = await getMeta(DB)
+    this.logLevel = this.meta.logLevel
+    this.syncDropbox = this.meta.syncDropbox
   }
 
   /**
    * It's fine to rename to an existing tag; this just merges the tags.
    */
   async renameTags() {
-    let metas = await DB.meta.toArray()
-    if (!metas.length) {
-      this.snackbarMsg = "No tags found!"
-      this.snackbarColor = "red"
-      this.showSnackbar = true
-      return
-    }
-    if (metas.length > 1) {
-      console.log("Warning: found multiple meta entries! Only using the first.")
-      console.log(metas)
-    }
-    const meta = metas[0]
+    const meta = this.meta!
     const idx = meta.tags.indexOf(this.oldTag)
     if (idx == -1) {
       this.snackbarMsg = `Tag ${this.oldTag} not found!`
@@ -196,9 +193,11 @@ export default class Settings extends Vue {
       console.log(`Deletion not confirmed; got ${confirmStr}.`)
     }
   }
-  async updateLogLevel() {
-    const meta = await getMeta(DB)
-    meta.logLevel = this.logLevel
+  updateLogLevel() {
+    this.meta!.logLevel = this.logLevel
+  }
+  updateDbxSync() {
+    this.meta!.syncDropbox = this.syncDropbox
   }
   addFromReddit() {
     this.getPasswordDialog = false

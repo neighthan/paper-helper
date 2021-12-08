@@ -14,6 +14,7 @@ class Meta {
   protected _redditUsername: string
   protected _lastSyncTime: number
   protected _logLevel: LogLevel
+  protected _syncDropbox: boolean
 
   constructor(
     id = 0,
@@ -25,6 +26,7 @@ class Meta {
     redditUsername = "",
     lastSyncTime = -1,
     logLevel: LogLevel = "debug",
+    syncDropbox = false,
   ) {
     this.id = id
     this._tags = tags
@@ -35,6 +37,7 @@ class Meta {
     this._redditUsername = redditUsername
     this._lastSyncTime = lastSyncTime
     this._logLevel = logLevel
+    this._syncDropbox = syncDropbox
   }
 
   // dexie didn't like using a getter for id, but we don't want a setter anyway, so
@@ -58,6 +61,13 @@ class Meta {
   }
   get logLevel() {
     return this._logLevel
+  }
+  get syncDropbox() {
+    return this._syncDropbox
+  }
+  set syncDropbox(syncDropbox: boolean) {
+    this._syncDropbox = syncDropbox
+    this._updateDb()
   }
   set tags(tags) {
     this._tags = tags
