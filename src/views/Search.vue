@@ -193,7 +193,9 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     this.$router.push({path: `/notes/${entry.table}/${entry.id}`})
   }
   openFirst() {
-    this.addNotes(Object.values(this.cachedEntries)[0])
+    if (this.filteredEntries.length > 0) {
+      this.addNotes(Object.values(this.filteredEntries)[0])
+    }
   }
   @Watch("addFromURLDialog")
   onPropertyChanged(newVal: boolean, oldVal: boolean) {
