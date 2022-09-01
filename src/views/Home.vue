@@ -31,7 +31,7 @@
         <v-layout row wrap>
           <v-flex v-for="query of sortedFilteredQueries" :key="query.id">
             <v-card>
-              <v-card-title>{{query.name}}</v-card-title>
+              <v-card-title>{{query.title}}</v-card-title>
               <v-card-actions>
                 <v-btn text @click="open(query)">Open</v-btn>
                 <v-btn icon @click="edit(query)"><v-icon>edit</v-icon></v-btn>
@@ -50,18 +50,21 @@
 </template>
 
 <script lang="ts">
+import {SavedQuery, loadSavedQueries} from "@/backend/savedQueries"
+
 // TODO: look at vuetify docs to see if this is a good way to make the grid; I just
 // cobbled this together from some quick googling.
 
 // pull the card out to be in components?
 import {Component, Vue} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
-import {DB, getMeta, SavedQuery} from "../db"
 import {genId} from "../utils"
 import SavedQueryDialog from "@/components/SavedQueryDialog.vue"
 import {EntryTypes} from "@/entries/entries"
 import {syncAllDropbox} from "../dbx"
 import {Snackable} from "@/components/Snackbar.vue"
+import { deleteEntryFile, writeEntryFile } from "@/backend/files"
+import Settings from "@/backend/settings"
 
 @Component({components: {NavIcon, SavedQueryDialog}})
 export default class Home extends Vue {
@@ -74,27 +77,16 @@ export default class Home extends Vue {
   search = ""
 
   async created() {
-    let queries = await DB.savedQueries.toArray()
+    let queries = await loadSavedQueries()
     this.savedQueries = Object.fromEntries(queries.map(q => [q.id, q]))
     if (Object.keys(this.savedQueries).length === 0) {
       for (const entryType of Object.keys(EntryTypes)) {
-        let query: SavedQuery = {
-          name: `All ${entryType}s`,
-          tags: [],
-          searchString: "",
-          id: genId(),
-          timeAdded: Date.now(),
-          lastSyncTime: -1,
-          lastModifiedTime: Date.now(),
-          entryType: entryType,
-        }
-        DB.savedQueries.put(query)
+        let query = new SavedQuery({filter: "", entryType, title: `All ${entryType}s`})
+        writeEntryFile(query)
         Vue.set(this.savedQueries, query.id, query)
       }
     }
-    getMeta(DB).then(meta => {
-      this.allTags = meta.tags
-    })
+    this.allTags = Settings.tags
   }
   async add(save: boolean, query: SavedQuery) {
     this.dialog = false
@@ -104,7 +96,7 @@ export default class Home extends Vue {
         query.timeAdded = Date.now()
         query.id = genId()
       }
-      await DB.savedQueries.put(query)
+      await writeEntryFile(query)
       Vue.set(this.savedQueries, query.id, query)
     }
   }
@@ -121,24 +113,21 @@ export default class Home extends Vue {
   async remove(query: SavedQuery) {
     this.deletedQuery = query
     this.showUndeleteSnackbar = true
-    await DB.transaction("rw", DB.savedQueries, DB.deletedEntries, trans => {
-      DB.savedQueries.delete(query.id)
-      DB.deletedEntries.add({id: query.id, lastSyncTime: query.lastSyncTime})
-    })
+    deleteEntryFile(query)
     Vue.delete(this.savedQueries, query.id)
   }
   undeleteQuery() {
     this.showUndeleteSnackbar = false
     if (this.deletedQuery !== null) {
-      DB.savedQueries.add(this.deletedQuery)
+      writeEntryFile(this.deletedQuery)
       Vue.set(this.savedQueries, this.deletedQuery.id, this.deletedQuery)
     }
   }
   get sortedFilteredQueries() {
     const queries = Object.values(this.savedQueries)
     return queries
-      .filter(q => q.name.toLowerCase().includes(this.search.toLowerCase()))
-      .sort((q1, q2) => q1.name.localeCompare(q2.name))
+      .filter(q => q.title.toLowerCase().includes(this.search.toLowerCase()))
+      .sort((q1, q2) => q1.title.localeCompare(q2.title))
   }
   async syncDropbox() {
     const msgs = await syncAllDropbox()

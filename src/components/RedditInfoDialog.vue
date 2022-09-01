@@ -25,8 +25,9 @@
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator"
-import {DB, getMeta} from "../db"
+import Settings from "@/backend/settings"
 
+const DB: any = 0
 // type Data = {
 //   userAgent: string,
 //   clientId: string,
@@ -46,11 +47,10 @@ export default class RedditInfoDialog extends Vue {
   }
 
   async setFieldsFromDB() {
-    const meta = await getMeta(DB)
-    this.userAgent = meta.redditInfo.userAgent
-    this.clientId = meta.redditInfo.clientId
-    this.clientSecret = meta.redditInfo.clientSecret
-    this.username = meta.redditInfo.username
+    this.userAgent = Settings.redditInfo.userAgent
+    this.clientId = Settings.redditInfo.clientId
+    this.clientSecret = Settings.redditInfo.clientSecret
+    this.username = Settings.redditInfo.username
   }
 
   get redditData() {
@@ -63,8 +63,7 @@ export default class RedditInfoDialog extends Vue {
   }
   async save() {
     this.$emit("close")
-    const meta = await getMeta(DB)
-    meta.redditInfo = this.redditData
+    Settings.redditInfo = this.redditData
   }
   cancel() {
     this.setFieldsFromDB()

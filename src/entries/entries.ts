@@ -1,6 +1,7 @@
-import {DB} from '@/db'
 import {PaperData} from './papers/paper'
 import {ToDo} from './todos/todos'
+
+const DB: any = 0
 
 const PaperTypes = {
   key: <"paper"> "paper",

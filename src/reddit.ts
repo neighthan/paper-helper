@@ -1,15 +1,16 @@
-import {DB, getMeta} from "./db"
 import snoowrap from "snoowrap"
 import {getPaperFromArxiv} from "@/utils"
 import { PaperData } from "@/entries/papers/paper"
+import Settings from "@/backend/settings"
+
+const DB: any = 0
 
 function isSubmission(obj: any): obj is snoowrap.Submission {
   return obj.title !== undefined
 }
 
 async function getRedditInfo() {
-  const meta = await getMeta(DB)
-  return meta.redditInfo
+  return Settings.redditInfo
 }
 
 /**
@@ -41,14 +42,14 @@ export default async function getAllSavedPosts(password: string) {
     const redditURL = `https://www.reddit.com/${post.permalink}`
     if (post.domain === "arxiv.org") {
       data = await getPaperFromArxiv(post.url)
-      data.notes = `[Reddit page]\n${post.selftext}\nArxiv abstract:\n${data.notes}\n\n[Reddit page]: ${redditURL}`
+      data.content = `[Reddit page]\n${post.selftext}\nArxiv abstract:\n${data.content}\n\n[Reddit page]: ${redditURL}`
       data.tags.push("reddit")
       data.tags.push("ml")
     } else {
       const date = new Date(post.created_utc * 1000)
       data = new PaperData()
       data.title = post.title
-      data.notes = post.selftext
+      data.content = post.selftext
       data.tags = ["reddit", "ml"]
       data.date = date.toISOString().split("T")[0]
       data.url = redditURL

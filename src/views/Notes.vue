@@ -30,23 +30,24 @@ import {Component, Vue} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
 import Markdown from "@/components/Markdown.vue"
 import MdText from "@/components/MdText.vue"
-import {DB} from "../db"
 import { Entry } from "@/entries/entry"
 import { decrypt, stringToCipherBuffer } from "@/crypto"
+
+const DB: any = 0
 
 @Component({components: {NavIcon, Markdown, MdText}})
 export default class Notes extends Vue {
   entryId = this.$route.params["id"]
-  entryTable = this.$route.params["table"]
+  entryClass = this.$route.params["class"]
   entry = new Entry() // filler until you get the real entry
   saving = false
   password: string | null = null
 
   async created() {
-    const entry = <Entry> await DB.table(this.entryTable).get(this.entryId)
+    const entry = <Entry> await DB.table(this.entryClass).get(this.entryId)
     if (entry === undefined) {
       console.log(
-        `Couldn't find entry with id ${this.entryId} in table ${this.entryTable}!`
+        `Couldn't find entry with id ${this.entryId} with class ${this.entryClass}!`
       )
       return
     }
@@ -54,9 +55,9 @@ export default class Notes extends Vue {
     if (entry.iv !== undefined) {
       this.password = prompt("Enter the password to decrypt this entry.")
       if (this.password === null) return
-      const decoded = await decrypt(stringToCipherBuffer(entry.notes), entry.iv, this.password)
+      const decoded = await decrypt(stringToCipherBuffer(entry.content), entry.iv, this.password)
       if (decoded !== null) {
-        entry.notes = decoded
+        entry.content = decoded
       } else {
         // couldn't decode, so password was wrong. Set to null so MdText can't save
         // any changes.

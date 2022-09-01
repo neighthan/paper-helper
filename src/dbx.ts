@@ -1,12 +1,13 @@
 import { Dropbox } from 'dropbox'
-import {DeletedEntry, Meta, exportDB} from "./db"
-import {DB, getMeta} from "./db"
 import { Entry } from "./entries/entry"
 import {logger} from "./logger"
 import {mergeTexts} from "./utils"
 import {EntryTypes} from "@/entries/entries"
+import Settings from "@/backend/settings"
+import { exportFiles } from './backend/files'
 
 const DROPBOX_PATH = "/paper-helper-db.json"
+const DB: any = 0
 
 type HasId = {
   id: string
@@ -42,7 +43,6 @@ function extractTable<T extends HasId>(tables: Table<any>[], name: string) {
  *
  * @param localData
  * @param dbxData
- * @param deletedEntriesArr
  * @param mergeCallback The default merge strategy is to keep the newer entry. If this
  *   entry should be modified to include some information from the older entry, use
  *   this callback to do so.
@@ -50,13 +50,9 @@ function extractTable<T extends HasId>(tables: Table<any>[], name: string) {
 async function mergeData<T extends Syncable & HasId>(
   localData: Map<string, T>,
   dbxData: Map<string, T>,
-  deletedEntriesArr: DeletedEntry[],
   mergeCallback?: (newerDatum: T, olderDatum: T) => void,
 ) {
   const deletedEntries: Map<string, number> = new Map()
-  for (let deletedEntry of deletedEntriesArr) {
-    deletedEntries.set(deletedEntry.id, deletedEntry.lastSyncTime)
-  }
 
   const localIdsModified: string[] = []
   const localIdsNotModified: string[] = []
@@ -126,7 +122,7 @@ async function mergeData<T extends Syncable & HasId>(
 
 async function updateDBFromDropbox<T extends Syncable & HasId>(
   jsonTables: Table<any>[],
-  dexieTable: Dexie.Table<T, any>,
+  dexieTable: any, //Dexie.Table<T, any>,
   mergeCallback?: (newerDatum: T, olderDatum: T) => void,
 ) {
   const dbxData = extractTable<T>(jsonTables, dexieTable.name)
@@ -134,7 +130,7 @@ async function updateDBFromDropbox<T extends Syncable & HasId>(
   for (let datum of await dexieTable.toArray()) {
     localData.set(datum.id, datum)
   }
-  const {localOnlyIdsNotModified, addData, mergedData} = await mergeData(localData, dbxData, await DB.deletedEntries.toArray(), mergeCallback)
+  const {localOnlyIdsNotModified, addData, mergedData} = await mergeData(localData, dbxData, mergeCallback)
 
   await Promise.all([
     dexieTable.bulkDelete(localOnlyIdsNotModified),
@@ -148,23 +144,23 @@ async function updateDBFromDropbox<T extends Syncable & HasId>(
   return `Synced ${dexieTable.name}. # Added: ${nAdded}; # Deleted: ${nDeleted}; # Merged: ${nMerged}`
 }
 
-async function syncDropbox(entryTables: Dexie.Table<Entry, string>[], promptForToken: boolean=true) {
+// entryTables: Dexie.Table<Entry, string>[]
+async function syncDropbox(entryTables: any, promptForToken: boolean=true) {
   const startTime = Date.now()
-  const meta = await getMeta(DB)
-  if (!meta.syncDropbox) {
+  if (!Settings.syncDropbox) {
     console.log("Dropbox syncing is disabled; toggle in settings.")
     return []
   }
-  if (!meta.dropboxToken) {
+  if (!Settings.dropboxToken) {
     // TODO: make this nicer
     if (!promptForToken) return ["No saved Dropbox token."]
     let token =  prompt("Enter your dropbox token")
     if (!token) {
       return ["No Dropbox token given."]
     }
-    meta.dropboxToken = token
+    Settings.dropboxToken = token
   }
-  const dbx = new Dropbox({accessToken: meta.dropboxToken})
+  const dbx = new Dropbox({accessToken: Settings.dropboxToken})
 
   const msgs: string[] = []
   let response
@@ -173,7 +169,7 @@ async function syncDropbox(entryTables: Dexie.Table<Entry, string>[], promptForT
   } catch (error) {
     console.error("Error while trying to download from Dropbox:")
     console.error(error)
-    await _dbUpload(entryTables, meta)
+    await _dbUpload(entryTables)
     return ["No data found on Dropbox; uploaded local data."]
   }
   let dbxJsonBlob = (<Blob> (<any> response.result).fileBlob)
@@ -181,10 +177,9 @@ async function syncDropbox(entryTables: Dexie.Table<Entry, string>[], promptForT
   const tables = json.data.data
 
   const entryMergeCallback = (newEntry: Entry, oldEntry: Entry) => {
-    if (oldEntry.notes !== newEntry.notes) {
+    if (oldEntry.content !== newEntry.content) {
       newEntry.tags.push("merge-conflict")
-      newEntry.notes = mergeTexts(newEntry.notes, oldEntry.notes, "!~")
-      newEntry.lastModifiedTime = Date.now()
+      newEntry.content = mergeTexts(newEntry.content, oldEntry.content, "!~")
     }
   }
   msgs.push(await updateDBFromDropbox(tables, DB.savedQueries))
@@ -203,32 +198,34 @@ async function syncDropbox(entryTables: Dexie.Table<Entry, string>[], promptForT
     }
     msgs.push(await updateDBFromDropbox(tables, <any> entryTable, <any> entryMergeCallback))
   }
-  await _dbUpload(entryTables, meta)
+  await _dbUpload(entryTables)
   await DB.deletedEntries.clear()
   console.log(`Syncing took ${(Date.now() - startTime) / 1000} seconds.`)
   return msgs
 }
 
 // only call this from syncDropbox!
-async function _dbUpload(entryTables: Dexie.Table<Entry, string>[], meta: Meta) {
+// entryTables: Dexie.Table<Entry, string>[]
+async function _dbUpload(entryTables: any) {
   // only update the sync time for entries which have been modified
   const syncTime = Date.now()
   for (const entryTable of entryTables) {
-    await entryTable.toCollection().modify(entry => {
+    // TODO!!
+    await entryTable.toCollection().modify((entry: any) => {
       if (entry.lastModifiedTime > <number> entry.lastSyncTime) {
         entry.lastSyncTime = syncTime
       }
     })
   }
-  const jsonBlob = await exportDB(DB)
+  const jsonBlob = await exportFiles()
   const jsonStr = await jsonBlob.text()
-  const dbx = new Dropbox({accessToken: meta.dropboxToken})
+  const dbx = new Dropbox({accessToken: Settings.dropboxToken})
   dbx.filesUpload({
     path: DROPBOX_PATH,
     contents: new File([jsonStr], "db.json", {type: "application/json"}),
     mode: {".tag": "overwrite"},
   }).then(() => {
-    meta.lastSyncTime = Date.now()
+    Settings.lastSyncTime = Date.now()
   }).catch((error) => {
     console.error("Error uploading to Dropbox!")
     console.error(error)

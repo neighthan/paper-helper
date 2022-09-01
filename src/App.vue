@@ -12,17 +12,17 @@
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator"
 import NavDrawer from "@/components/NavDrawer.vue"
-import {DB, getMeta} from "@/db"
 import {logger} from "@/logger"
 import PaperDialog from "@/entries/papers/PaperDialog.vue"
 import {PaperData} from "@/entries/papers/paper"
 import {syncAllDropbox} from "@/dbx"
 import Snackbar from "@/components/Snackbar.vue"
+import Settings from "@/backend/settings"
 
 @Component({components: {NavDrawer, PaperDialog, Snackbar}})
 export default class App extends Vue {
   async created() {
-    const logLevel = (await getMeta(DB)).logLevel
+    const logLevel = Settings.logLevel
     logger.logLevel = logLevel
     console.log(`Logging at level ${logLevel}.`)
   }

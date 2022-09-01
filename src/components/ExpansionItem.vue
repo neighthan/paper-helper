@@ -95,10 +95,10 @@ export default class ExpansionItem extends Vue {
     }
   }
   get mdNotes() {
-    return renderMarkdown(this.entry.notes, () => {
+    return renderMarkdown(this.entry.content, () => {
       // This is just to make Vue re-render by making it think the abstract changed.
       // Is there a better method for this?
-      const notes = this.entry.notes
+      const notes = this.entry.content
       Vue.set(this.entry, "notes", "")
       Vue.set(this.entry, "notes", notes)
     })

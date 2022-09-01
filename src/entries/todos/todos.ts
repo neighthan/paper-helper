@@ -1,5 +1,6 @@
 import {Entry} from "@/entries/entry"
-import {DB} from "@/db"
+
+const DB: any = 0 // TODO!!!
 
 const REMOVE = 0
 const RESTORE = 1
@@ -10,7 +11,7 @@ const UPDATE = 2
 // been modified)
 class ToDo extends Entry{
   entryId = "" // entry this todo was pulled from; empty if no entry
-  entryTable = "" // name of the dexie table with the entry, if entryId given
+  entryClass = "" // class of the entry, if entryId given
   entryStartLine = -1 // -1 means this ToDo didn't come from another entry
   entryEndLine = -1
   deadline = ""
@@ -31,8 +32,8 @@ class ToDo extends Entry{
       entryString += `(${this.deadline})`
     }
     entryString += ` ${this.title}`
-    if (this.notes) {
-      entryString += ` {{${this.notes}}}`
+    if (this.content) {
+      entryString += ` {{${this.content}}}`
     }
     return entryString
   }
@@ -51,9 +52,9 @@ class ToDo extends Entry{
 
   async _update(mode: typeof REMOVE | typeof RESTORE | typeof UPDATE) {
     if (!this.entryId) return
-    const entry = <Entry> await DB.table(this.entryTable).get(this.entryId)
+    const entry = <Entry> await DB.table(this.entryClass).get(this.entryId)
     const todoString = this.asString(entry)
-    const lines = entry.notes.split("\n")
+    const lines = entry.content.split("\n")
     if (!lines[this.entryStartLine].toLowerCase().startsWith("@todo")) {
       console.error(`Expected a todo on line ${this.entryStartLine} of`, entry)
       return
@@ -67,19 +68,19 @@ class ToDo extends Entry{
       // don't change the start and end lines. If the ToDo is really completed / deleted,
       // it'll be removed anyway, so it doesn't matter. If the deletion is undone, we'll
       // need the start line to know where to insert it back in.
-      entry.notes = (
+      entry.content = (
         lines.slice(0, this.entryStartLine)
         .concat(lines.slice(this.entryEndLine + 1))
       ).join("\n")
     } else if (mode === RESTORE) {
-      entry.notes = (
+      entry.content = (
         lines.slice(0, this.entryStartLine)
         .concat(todoString)
         .concat(lines.slice(this.entryStartLine))
       ).join("\n")
     } else {
       // test this
-      entry.notes = (
+      entry.content = (
         lines.slice(0, this.entryStartLine)
         .concat(todoString)
         .concat(lines.slice(this.entryEndLine + 1))
@@ -88,9 +89,9 @@ class ToDo extends Entry{
 
     // the length of this ToDo might have changed, so update the end line
     this.entryEndLine = this.entryStartLine + todoString.split("\n").length - 1
-    DB.transaction("rw", DB.todos, DB.table(this.entryTable), async () => {
+    DB.transaction("rw", DB.todos, DB.table(this.entryClass), async () => {
       DB.todos.put(this)
-      DB.table(this.entryTable).put(entry)
+      DB.table(this.entryClass).put(entry)
     })
   }
 }
@@ -105,7 +106,7 @@ class ToDo extends Entry{
 // just use a regex for this?
 function getTodos(entry: Entry) {
   const todos: ToDo[] = []
-  const lines = entry.notes.split("\n")
+  const lines = entry.content.split("\n")
   let i = 0
   while (i < lines.length) {
     let line = lines[i++]
@@ -132,21 +133,21 @@ function getTodos(entry: Entry) {
     }
     if (line.includes("{{")) {
       todo.title = line.split("{{")[0]
-      todo.notes = line.split("{{")[1]
+      todo.content = line.split("{{")[1]
       // if there is no }}, juse use the rest of the text
-      while (!todo.notes.endsWith("}}") && i < lines.length) {
+      while (!todo.content.endsWith("}}") && i < lines.length) {
         line = lines[i++]
-        todo.notes += "\n" + line.trim()
+        todo.content += "\n" + line.trim()
       }
-      if (todo.notes.endsWith("}}")) {
-        todo.notes = todo.notes.slice(0, todo.notes.length - 2)
+      if (todo.content.endsWith("}}")) {
+        todo.content = todo.content.slice(0, todo.content.length - 2)
       }
     } else {
       todo.title = line
     }
     todo.entryEndLine = i - 1
     todo.entryId = entry.id
-    todo.entryTable = entry.table
+    todo.entryClass = entry.constructor.name
     todos.push(todo)
   }
   return todos
@@ -162,7 +163,7 @@ async function updateTodos(entry: Entry) {
   await DB.transaction("rw", DB.todos, async () => {
     await deleteTodos(entry)
     await DB.todos.bulkAdd(todos)
-  }).catch(reason => {
+  }).catch((reason: any) => {
     console.error(reason)
   })
 }

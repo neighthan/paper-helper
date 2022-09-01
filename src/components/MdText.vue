@@ -18,7 +18,6 @@
 import {Component, Vue, Prop, Watch} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
 import Markdown from "@/components/Markdown.vue"
-import {DB} from "../db"
 import {genId} from "../utils"
 import {clearImgCache, getMarkdownForImg} from "../markdown"
 import {loadMathjax} from "../mathjax"
@@ -26,8 +25,10 @@ import { Entry } from "@/entries/entry"
 import { encrypt, cipherBufferToString } from "@/crypto"
 import {ToDo, updateTodos} from "@/entries/todos/todos"
 
+const DB: any = 0
+
 const autosave = true
-let autosaveIntervalId: number | null = null
+let autosaveIntervalId: any //number | null = null
 
 loadMathjax(1000)
 
@@ -121,7 +122,7 @@ export default class MdText extends Vue {
     } else {
       this.entry.notesMd = this.text
     }
-    await DB.table(this.entry.table).put(this.entry)
+    await DB.table(this.entry.constructor.name).put(this.entry)
     await updateTodos(this.entry)
     if (this.entry instanceof ToDo) {
       this.entry.updateInEntry()

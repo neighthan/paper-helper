@@ -45,7 +45,7 @@
           <component
             :is="entryComponent"
             ref="entryDialog"
-            :all_tags="meta.tags"
+            :all_tags="settings.tags"
             @addEntry="addEntry"
           ></component>
 
@@ -120,12 +120,14 @@ import ToDoDialog from "@/entries/todos/ToDoDialog.vue"
 import ExpansionItem from "@/components/ExpansionItem.vue"
 import NavIcon from "@/components/NavIcon.vue"
 import {importInto} from "dexie-export-import"
-import {DB, PapersDb, Meta, getMeta, exportDB} from "../db"
 import {syncDropbox as syncDropbox_} from "../dbx"
 import {getPaperFromArxiv, getDataFromYouTube} from "../utils"
 import {updateTodos, deleteTodos, ToDo} from "@/entries/todos/todos"
 import {EntryTypes} from "@/entries/entries"
 import {Snackable} from "@/components/Snackbar.vue"
+import {exportFiles, importFiles, loadFiles, writeEntryFile} from "@/backend/files"
+import {loadSavedQuery, SavedQuery} from "@/backend/savedQueries"
+import Settings from "@/backend/settings"
 
 type ValueOf<T> = T[keyof T]
 
@@ -140,7 +142,6 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   dialog = false
   addFromURLDialog = false
   addURL = ""
-  meta: Meta = new Meta()
   queryId =  this.$route.params["queryId"]
   savedQueryTags: string[] = []
   queryName = ""
@@ -150,9 +151,10 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   entryTable!: E["table"]
   EntryClass!: E["ctor"]
   entryComponent: E["component"] = "PaperDialog"
+  settings = Settings
 
   async created() {
-    this.entryKey = <any> (await DB.savedQueries.get(this.queryId))!.entryType
+    this.entryKey = <any> (await loadSavedQuery(this.queryId)).entryType
     if (EntryTypes[this.entryKey] === undefined) {
       console.error(`No entry type with key ${this.entryKey}!`)
       return
@@ -162,16 +164,15 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     this.EntryClass = EntryTypes[this.entryKey].ctor
     this.entryComponent = EntryTypes[this.entryKey].component
 
-    await loadFromDB(this, DB, this.queryId)
+    // await loadFromDB(this, DB, this.queryId)
+    // TODO!!!
+    await loadFiles(this.queryId)
   }
   deleteEntry(entry: E["class"]) {
     this.deletedEntry = entry
     this.show_undelete_snackbar = true
     this.entryTable.delete(this.deletedEntry.id)
     deleteTodos(entry)
-    if (entry.lastSyncTime !== undefined) {
-      DB.deletedEntries.add({id: entry.id, lastSyncTime: entry.lastSyncTime})
-    }
     Vue.delete(this.cachedEntries, entry.id)
     if (entry instanceof ToDo) {
       entry.removeFromEntry()
@@ -182,7 +183,6 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     if (this.deletedEntry !== null) {
       this.entryTable.add(<any> this.deletedEntry)
       updateTodos(this.deletedEntry)
-      DB.deletedEntries.delete(this.deletedEntry.id)
       Vue.set(this.cachedEntries, this.deletedEntry.id, this.deletedEntry)
       if (this.deletedEntry instanceof ToDo) {
         this.deletedEntry.restoreToEntry()
@@ -190,7 +190,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     }
   }
   addNotes(entry: E["class"]) {
-    this.$router.push({path: `/notes/${entry.table}/${entry.id}`})
+    this.$router.push({path: `/notes/${entry.constructor.name}/${entry.id}`})
   }
   openFirst() {
     if (this.filteredEntries.length > 0) {
@@ -235,7 +235,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   }
   async download_data() {
     try {
-      const jsonBlob = await exportDB(DB)
+      const jsonBlob = await exportFiles
       const date = new Date().toLocaleDateString().replace(/\//g, "_")
       const mime_type = "text/json"
       const a = document.createElement("a")
@@ -263,8 +263,11 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     file_picker.click()
   }
   async load_data(jsonFile: File) {
-    await importInto(DB, jsonFile, {overwriteValues: true})
-    await loadFromDB(this, DB, this.queryId)
+    // TODO!!!
+    // await importInto(DB, jsonFile, {overwriteValues: true})
+    // await loadFromDB(this, DB, this.queryId)
+    await importFiles(jsonFile)
+    await loadFiles(this.queryId)
   }
   async addEntry(entry: E["class"]) {
     Vue.set(this.cachedEntries, entry.id, entry)
@@ -281,8 +284,10 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   }
 
   async goToMergeConflicts() {
-    let query = await DB.savedQueries.get("mergeConflicts")
-    if (query === undefined) {
+    let query
+    try {
+      query = await loadSavedQuery("mergeConflicts")
+    } catch {
       query = {
         id: "mergeConflicts",
         name: "Merge Conflicts",
@@ -293,7 +298,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
         lastModifiedTime: +new Date(),
         entryType: "paper",
       }
-      await DB.savedQueries.put(query)
+      await writeEntryFile(query)
     }
     this.$router.push({path: `/search/${query.id}`})
   }
@@ -302,8 +307,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     ;(<any> this.$refs.entryDialog).show(entry)
   }
   makeDefaultEntry(): E["class"] {
-    const entry = new this.EntryClass()
-    entry.tags = [...this.savedQueryTags]
+    const entry = new this.EntryClass({tags: [...this.savedQueryTags]})
     if (this.query_tags !== "") {
       entry.tags.push(...this.query_tags.split(" "))
     }
@@ -325,16 +329,15 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
 
 
 async function loadFromDB<E extends ValueOf<typeof EntryTypes>>(
-  vue: Home<E>, db: PapersDb, queryId: string
+  vue: Home<E>, db: any, queryId: string
 ) {
   vue.done_loading = false
-  vue.meta = await getMeta(db)
-  const query = await db.savedQueries.get(queryId)
+  const query: SavedQuery = await db.savedQueries.get(queryId)
   if (!query) {
     console.error(`Unable to find query with id ${queryId}!`)
     return
   }
-  vue.queryName = query.name
+  vue.queryName = query.title
   vue.savedQueryTags = query.tags
   vue.queryTooltip = `Tags: ${query.tags}\nSearch: ${query.searchString}`
 
@@ -350,7 +353,7 @@ async function loadFromDB<E extends ValueOf<typeof EntryTypes>>(
         return false
       }
     }
-    if (entry.title.toLowerCase().includes(queryStr) || entry.notes.toLowerCase().includes(queryStr)) {
+    if (entry.title.toLowerCase().includes(queryStr) || entry.content.toLowerCase().includes(queryStr)) {
       return true
     }
     return false

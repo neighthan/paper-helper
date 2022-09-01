@@ -1,7 +1,8 @@
 import hljs from "highlight.js"
 import MarkdownIt from "markdown-it"
 import MdFootnotes from "markdown-it-footnote"
-import {DB} from "./db"
+
+const DB: any = 0
 
 const MdRenderer = new MarkdownIt({
   html: true,
@@ -29,7 +30,7 @@ function includeImgs(md: string, callback?: any) {
     return `<img src="${imgCache[id]}"`
   })
   if (unloadedIds) {
-    DB.imgs.bulkGet(unloadedIds).then((imgs) => {
+    DB.imgs.bulkGet(unloadedIds).then((imgs: any) => {
       let newImgLoaded = false
       for (let img of imgs) {
         if (!img) continue

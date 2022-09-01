@@ -1,23 +1,32 @@
 import { genId } from "@/utils"
 
 class Entry {
-  id = genId()
-  title = ""
-  tags: string[] = []
-  notes = ""
-  time_added = Date.now()
-  priority = 0
-  table = "" // must be overridden by subclasses
-  lastSyncTime?: number // use -1 for never synced to dropbox; undefined if no syncing
-  lastModifiedTime = Date.now()
+  id: string
+  title: string
+  tags: string[]
+  content: string
+  timeAdded: number
+  priority: number
   iv?: Uint8Array
 
+  constructor(
+    {id = genId(), title = "", tags = [], content = "", timeAdded = Date.now(), priority = 0}:
+    {id?: string, title?: string, tags?: string[], content?: string, timeAdded?: number, priority?: number} = {}
+  ) {
+    this.id = id
+    this.title = title
+    this.tags = tags
+    this.content = content
+    this.timeAdded = timeAdded
+    this.priority = priority
+  }
+
   get dateString() {
-    return new Date((<any> this).date || this.time_added).toLocaleString("default", {month: "short", year: "numeric"})
+    return new Date((<any> this).date || this.timeAdded).toLocaleString("default", {month: "short", year: "numeric"})
   }
 
   get searchString() {
-    return `${this.title.toLowerCase()} ${this.notes.toLowerCase()}`
+    return `${this.title.toLowerCase()} ${this.content.toLowerCase()}`
   }
 
   get searchTags() {
@@ -25,10 +34,10 @@ class Entry {
   }
 
   get notesMd() {
-    return this.notes
+    return this.content
   }
   set notesMd(md: string) {
-    this.notes = md
+    this.content = md
   }
   get expansionItemMd() {
     return this.notesMd

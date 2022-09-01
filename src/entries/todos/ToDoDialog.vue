@@ -18,7 +18,7 @@
             <v-text-field label="Deadline (YYYY/MM/DD)" v-model="deadline" dense></v-text-field>
           </v-col>
         </v-row>
-        <v-textarea label="Notes" v-model="notes" rows=11 no-resize dense></v-textarea>
+        <v-textarea label="Content" v-model="content" rows=11 no-resize dense></v-textarea>
       </v-card-text>
 
       <v-divider></v-divider>
@@ -39,8 +39,10 @@
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator"
 import {genId} from "../../utils"
-import {DB, getMeta} from "../../db"
 import {ToDo} from "./todos"
+import Settings from "@/backend/settings"
+
+const DB: any = 0
 
 @Component
 export default class ToDoDialog extends Vue {
@@ -51,12 +53,12 @@ export default class ToDoDialog extends Vue {
   url = ""
   tags: string[] = []
   priority = "0"
-  notes = ""
+  content = ""
   deadline = ""
   lastSyncTime = -1
   showDialog = false
   entryId = ""
-  entryTable = ""
+  entryClass = ""
   entryStartLine = -1
   entryEndLine = -1
 
@@ -70,11 +72,11 @@ export default class ToDoDialog extends Vue {
     this.priority = todo.priority.toString()
     this.tags = [...todo.tags]
     this.title = todo.title
-    this.notes = todo.notes
-    this.timeAdded = todo.time_added
+    this.content = todo.content
+    this.timeAdded = todo.timeAdded
     this.deadline = todo.deadline
     this.entryId = todo.entryId
-    this.entryTable = todo.entryTable
+    this.entryClass = todo.entryClass
     this.entryStartLine = todo.entryStartLine
     this.entryEndLine = todo.entryEndLine
   }
@@ -85,12 +87,11 @@ export default class ToDoDialog extends Vue {
     todo.priority = parseFloat(this.priority)
     todo.tags = this.tags.map(tag => tag.trim())
     todo.title = this.title
-    todo.notes = this.notes
-    todo.time_added = this.timeAdded
+    todo.content = this.content
+    todo.timeAdded = this.timeAdded
     todo.deadline = this.deadline
-    todo.lastModifiedTime = Date.now()
     todo.entryId = this.entryId
-    todo.entryTable = this.entryTable
+    todo.entryClass = this.entryClass
     todo.entryStartLine = this.entryStartLine
     todo.entryEndLine = this.entryEndLine
     todo.table = "todos"
@@ -103,15 +104,13 @@ export default class ToDoDialog extends Vue {
   async save() {
     this.showDialog = false
     const todo = this.editedToDo
-    todo.lastModifiedTime = Date.now()
     if (!todo.id) {
-      todo.time_added = Date.now()
+      todo.timeAdded = Date.now()
       todo.id = genId()
     }
-    const meta = await getMeta(DB)
     await DB.transaction("rw", DB.meta, DB.todos, async () => {
       DB.todos.put(todo)
-      meta.tags = [...new Set(meta.tags.concat(todo.tags))]
+      Settings.tags = [...new Set(Settings.tags.concat(todo.tags))]
     })
     todo.updateInEntry()
     this.$emit("addEntry", todo)

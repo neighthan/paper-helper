@@ -18,7 +18,7 @@
             <v-text-field label="Date (YYYY/MM/DD)" v-model="date" dense></v-text-field>
           </v-col>
         </v-row>
-        <v-textarea label="Notes" v-model="notes" rows=11 no-resize dense></v-textarea>
+        <v-textarea label="Content" v-model="content" rows=11 no-resize dense></v-textarea>
         <v-text-field label="Authors" v-model="authors" dense></v-text-field>
         <v-text-field label="URL" v-model="url" dense></v-text-field>
       </v-card-text>
@@ -42,8 +42,10 @@
 import { Component, Prop, Vue } from "vue-property-decorator"
 import { PaperData } from "./paper"
 import {genId} from "../../utils"
-import {DB, getMeta} from "../../db"
 import {updateTodos} from "../todos/todos"
+import Settings from "@/backend/settings"
+
+const DB: any = 0
 
 @Component
 export default class PaperDialog extends Vue {
@@ -55,7 +57,7 @@ export default class PaperDialog extends Vue {
   tags: string[] = []
   priority = "0"
   authors = ""
-  notes = ""
+  content = ""
   date = ""
   lastSyncTime = -1
   showDialog = false
@@ -71,11 +73,10 @@ export default class PaperDialog extends Vue {
     this.tags = [...paper.tags]
     this.title = paper.title
     this.url = paper.url
-    this.notes = paper.notes
+    this.content = paper.content
     this.authors = paper.authors.join(", ")
-    this.timeAdded = paper.time_added
+    this.timeAdded = paper.timeAdded
     this.date = paper.date
-    this.lastSyncTime = paper.lastSyncTime
   }
 
   get editedPaper() {
@@ -85,13 +86,10 @@ export default class PaperDialog extends Vue {
     paper.tags = this.tags.map(tag => tag.trim())
     paper.title = this.title
     paper.url = this.url
-    paper.notes = this.notes
+    paper.content = this.content
     paper.authors = this.authors.split(", ")
-    paper.time_added = this.timeAdded
+    paper.timeAdded = this.timeAdded
     paper.date = this.date
-    paper.lastSyncTime = this.lastSyncTime
-    paper.lastModifiedTime = Date.now()
-    paper.table = "papers"
     return paper
   }
   cancel() {
@@ -101,16 +99,14 @@ export default class PaperDialog extends Vue {
   async save() {
     this.showDialog = false
     const paper = this.editedPaper
-    paper.lastModifiedTime = Date.now()
     if (!paper.id) {
-      paper.time_added = Date.now()
+      paper.timeAdded = Date.now()
       paper.id = genId()
     }
-    const meta = await getMeta(DB)
     await DB.transaction("rw", DB.meta, DB.papers, DB.todos, async () => {
       DB.papers.put(paper)
       updateTodos(paper)
-      meta.tags = [...new Set(meta.tags.concat(paper.tags))]
+      Settings.tags = [...new Set(Settings.tags.concat(paper.tags))]
     })
     this.$emit("addEntry", paper)
   }
