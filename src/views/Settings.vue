@@ -110,7 +110,7 @@ import SimpleDialog from "@/components/SimpleDialog.vue"
 import {LogLevel, logLevels as _logLevels} from "@/logger"
 import {updateTodos} from "@/entries/todos/todos"
 import SETTINGS from "@/backend/settings"
-import {FS, wipeAllFiles, writeEntryFile} from "@/backend/files"
+import {FS, joinPath, readEntryFile, wipeAllFiles, writeEntryFile} from "@/backend/files"
 
 const logLevels = Object.keys(_logLevels)
 
@@ -152,26 +152,19 @@ export default class Settings extends Vue {
     SETTINGS._updateFile()
 
     let nModified = 0
-    const DB: any = 0
-    for (const table of DB.tables) {
-      const first = await table.toCollection().first()
-      if (first.tags === undefined) return
-      const entries = <Entry[]> await table.toArray()
-      const modifiedEntries: Entry[] = []
-      for (let entry of entries) {
+    for (const entryType of await FS.readdir("/entries")) {
+      for (const entryName of await FS.readdir(joinPath("/entries", entryType))) {
+        const entry = await readEntryFile(entryType, entryName)
         if (entry.tags.includes(this.oldTag)) {
           if (entry.tags.includes(this.newTag) || !this.newTag) {
             entry.tags.splice(entry.tags.indexOf(this.oldTag), 1)
           } else {
             entry.tags[entry.tags.indexOf(this.oldTag)] = this.newTag
           }
-          modifiedEntries.push(entry)
+          writeEntryFile(entry)
+          updateTodos(entry) // so the todos' tags will still match the entry's
           nModified++
         }
-      }
-      table.bulkPut(modifiedEntries)
-      for (const entry of modifiedEntries) {
-        updateTodos(entry) // so the todos' tags will still match the entry's
       }
     }
 

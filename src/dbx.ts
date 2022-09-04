@@ -233,7 +233,7 @@ async function _dbUpload(entryTables: any) {
 }
 
 async function syncAllDropbox(promptForToken: boolean=true) {
-  return await syncDropbox(Object.values(EntryTypes).map(t => t.table), promptForToken)
+  return await syncDropbox(Object.values(EntryTypes).map(t => t.ctor.name), promptForToken)
 }
 
 export {syncDropbox, syncAllDropbox}

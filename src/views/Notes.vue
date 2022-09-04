@@ -32,8 +32,7 @@ import Markdown from "@/components/Markdown.vue"
 import MdText from "@/components/MdText.vue"
 import { Entry } from "@/entries/entry"
 import { decrypt, stringToCipherBuffer } from "@/crypto"
-
-const DB: any = 0
+import { joinPath, readEntryFile } from "@/backend/files"
 
 @Component({components: {NavIcon, Markdown, MdText}})
 export default class Notes extends Vue {
@@ -44,7 +43,7 @@ export default class Notes extends Vue {
   password: string | null = null
 
   async created() {
-    const entry = <Entry> await DB.table(this.entryClass).get(this.entryId)
+    const entry = await readEntryFile(this.entryClass, this.entryId)
     if (entry === undefined) {
       console.log(
         `Couldn't find entry with id ${this.entryId} with class ${this.entryClass}!`

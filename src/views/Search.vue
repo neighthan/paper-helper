@@ -125,7 +125,7 @@ import {getPaperFromArxiv, getDataFromYouTube} from "../utils"
 import {updateTodos, deleteTodos, ToDo} from "@/entries/todos/todos"
 import {EntryTypes} from "@/entries/entries"
 import {Snackable} from "@/components/Snackbar.vue"
-import {exportFiles, importFiles, loadFiles, writeEntryFile} from "@/backend/files"
+import {deleteEntryFile, exportFiles, importFiles, readAllEntries, readEntryFile, writeEntryFile} from "@/backend/files"
 import {loadSavedQuery, SavedQuery} from "@/backend/savedQueries"
 import Settings from "@/backend/settings"
 
@@ -148,7 +148,6 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   queryTooltip = ""
   focusSearch = false
   entryKey!: E["key"]
-  entryTable!: E["table"]
   EntryClass!: E["ctor"]
   entryComponent: E["component"] = "PaperDialog"
   settings = Settings
@@ -159,19 +158,15 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
       console.error(`No entry type with key ${this.entryKey}!`)
       return
     }
-    // use an object / map instead of if-else once things are working
-    this.entryTable = EntryTypes[this.entryKey].table
     this.EntryClass = EntryTypes[this.entryKey].ctor
     this.entryComponent = EntryTypes[this.entryKey].component
 
-    // await loadFromDB(this, DB, this.queryId)
-    // TODO!!!
-    await loadFiles(this.queryId)
+    await loadFromFiles(this, this.queryId)
   }
   deleteEntry(entry: E["class"]) {
     this.deletedEntry = entry
     this.show_undelete_snackbar = true
-    this.entryTable.delete(this.deletedEntry.id)
+    deleteEntryFile(this.deletedEntry)
     deleteTodos(entry)
     Vue.delete(this.cachedEntries, entry.id)
     if (entry instanceof ToDo) {
@@ -181,7 +176,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   undeleteEntry() {
     this.show_undelete_snackbar = false
     if (this.deletedEntry !== null) {
-      this.entryTable.add(<any> this.deletedEntry)
+      writeEntryFile(this.deletedEntry)
       updateTodos(this.deletedEntry)
       Vue.set(this.cachedEntries, this.deletedEntry.id, this.deletedEntry)
       if (this.deletedEntry instanceof ToDo) {
@@ -228,10 +223,11 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     this.showEntryDialog(data)
   }
   async syncDropbox() {
-    const msgs = await syncDropbox_([this.entryTable])
-    ;(this.$root as unknown as Snackable).snackbar.show(
-      msgs, {timeoutMs: 3000, btnName: "Fix Merge Conflicts", callback: this.goToMergeConflicts}
-    )
+    // TODO!!!
+    // const msgs = await syncDropbox_([this.entryTable])
+    // ;(this.$root as unknown as Snackable).snackbar.show(
+    //   msgs, {timeoutMs: 3000, btnName: "Fix Merge Conflicts", callback: this.goToMergeConflicts}
+    // )
   }
   async download_data() {
     try {
@@ -263,20 +259,16 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     file_picker.click()
   }
   async load_data(jsonFile: File) {
-    // TODO!!!
     // await importInto(DB, jsonFile, {overwriteValues: true})
-    // await loadFromDB(this, DB, this.queryId)
     await importFiles(jsonFile)
-    await loadFiles(this.queryId)
+    await loadFromFiles(this, this.queryId)
   }
   async addEntry(entry: E["class"]) {
     Vue.set(this.cachedEntries, entry.id, entry)
   }
   updatePriority(entry: E["class"], priority: number) {
     entry.priority = priority
-    // thought TS would be smart enough for this, but apparently it can't tell that
-    // E["class"] and E["table"] are always compatible
-    this.entryTable.put(<any> entry)
+    writeEntryFile(entry)
     updateTodos(entry) // so the todos' priorities will match the entry's
     if (entry instanceof ToDo) {
       entry.updateInEntry()
@@ -288,16 +280,17 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     try {
       query = await loadSavedQuery("mergeConflicts")
     } catch {
-      query = {
+      query = new SavedQuery({
         id: "mergeConflicts",
-        name: "Merge Conflicts",
-        searchString: "",
+        title: "Merge Conflicts",
+        filter: "",
         tags: ["merge-conflict"],
         timeAdded: Date.now(),
-        lastSyncTime: -1,
-        lastModifiedTime: +new Date(),
         entryType: "paper",
-      }
+        // TODO!!: there can be merge conflicts of any kind. Need to add
+        // support for queries that return multiple entry types. Maybe
+        // you specify the allowed entry types just like the allowed tags
+      })
       await writeEntryFile(query)
     }
     this.$router.push({path: `/search/${query.id}`})
@@ -328,24 +321,24 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
 }
 
 
-async function loadFromDB<E extends ValueOf<typeof EntryTypes>>(
-  vue: Home<E>, db: any, queryId: string
+async function loadFromFiles<E extends ValueOf<typeof EntryTypes>>(
+  vue: Home<E>, queryId: string
 ) {
   vue.done_loading = false
-  const query: SavedQuery = await db.savedQueries.get(queryId)
+  const query = await readEntryFile("SavedQuery", queryId) as unknown as SavedQuery
   if (!query) {
     console.error(`Unable to find query with id ${queryId}!`)
     return
   }
   vue.queryName = query.title
   vue.savedQueryTags = query.tags
-  vue.queryTooltip = `Tags: ${query.tags}\nSearch: ${query.searchString}`
+  vue.queryTooltip = `Tags: ${query.tags}\nSearch: ${query.filter}`
 
   const queryTags = query.tags.map(tag => tag.toLowerCase())
-  const queryStr = query.searchString.toLowerCase()
+  const queryStr = query.filter.toLowerCase()
   // typescript can't do filter on types that are unions of array types, but it works on
   // arrays of union types, so hack around this a bit.
-  let entries = <E["class"][]> await vue.entryTable.toArray()
+  let entries = <E["class"][]> await readAllEntries(vue.EntryClass.name)
   entries = entries.filter(entry => {
     const tags = entry.tags.map(tag => tag.toLowerCase())
     for (let tag of queryTags) {

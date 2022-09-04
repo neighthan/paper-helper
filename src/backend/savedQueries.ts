@@ -5,7 +5,7 @@
 import { Entry } from "@/entries/entry"
 import {fromMarkdown, FS, joinPath, readFile, writeFile} from "./files"
 
-const SAVED_QUERY_DIR = "/SavedQuery"
+const SAVED_QUERY_DIR = "/entries/SavedQuery"
 
 class SavedQuery extends Entry {
   filter: string
@@ -17,19 +17,6 @@ class SavedQuery extends Entry {
     this.entryType = entryType
   }
 }
-
-// function savedQueryToJSON(query: SavedQuery) {
-//   return `{
-//   "id": "${query.id}",
-//   "name": "${query.name}",
-//   "searchString": "${query.searchString}",
-//   "tags": ${JSON.stringify(query.tags)},
-//   "timeAdded": ${query.timeAdded},
-//   "lastSyncTime": ${query.lastSyncTime},
-//   "lastModifiedTime": ${query.lastModifiedTime},
-//   "entryType": "${query.entryType}"
-//   }`
-// }
 
 // todo: function to check that object parsed from toml is a valid
 // SavedQuery. There's a way to make TS view this as a type guard...

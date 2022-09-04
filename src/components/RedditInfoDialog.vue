@@ -27,7 +27,6 @@
 import { Component, Vue } from "vue-property-decorator"
 import Settings from "@/backend/settings"
 
-const DB: any = 0
 // type Data = {
 //   userAgent: string,
 //   clientId: string,

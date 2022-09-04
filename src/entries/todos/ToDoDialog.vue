@@ -41,8 +41,7 @@ import { Component, Prop, Vue } from "vue-property-decorator"
 import {genId} from "../../utils"
 import {ToDo} from "./todos"
 import Settings from "@/backend/settings"
-
-const DB: any = 0
+import { writeEntryFile } from "@/backend/files"
 
 @Component
 export default class ToDoDialog extends Vue {
@@ -108,10 +107,8 @@ export default class ToDoDialog extends Vue {
       todo.timeAdded = Date.now()
       todo.id = genId()
     }
-    await DB.transaction("rw", DB.meta, DB.todos, async () => {
-      DB.todos.put(todo)
-      Settings.tags = [...new Set(Settings.tags.concat(todo.tags))]
-    })
+    await writeEntryFile(todo)
+    Settings.tags = [...new Set(Settings.tags.concat(todo.tags))]
     todo.updateInEntry()
     this.$emit("addEntry", todo)
   }

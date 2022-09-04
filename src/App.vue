@@ -18,6 +18,9 @@ import {PaperData} from "@/entries/papers/paper"
 import {syncAllDropbox} from "@/dbx"
 import Snackbar from "@/components/Snackbar.vue"
 import Settings from "@/backend/settings"
+import { setupDirs } from "./backend/files"
+
+setupDirs()
 
 @Component({components: {NavDrawer, PaperDialog, Snackbar}})
 export default class App extends Vue {

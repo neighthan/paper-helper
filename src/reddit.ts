@@ -2,8 +2,7 @@ import snoowrap from "snoowrap"
 import {getPaperFromArxiv} from "@/utils"
 import { PaperData } from "@/entries/papers/paper"
 import Settings from "@/backend/settings"
-
-const DB: any = 0
+import { writeEntryFile } from "./backend/files"
 
 function isSubmission(obj: any): obj is snoowrap.Submission {
   return obj.title !== undefined
@@ -54,7 +53,7 @@ export default async function getAllSavedPosts(password: string) {
       data.date = date.toISOString().split("T")[0]
       data.url = redditURL
     }
-    DB.papers.add(data).then(() => {
+    writeEntryFile(data).then(() => {
       post.unsave()
     })
     nPapersAdded += 1

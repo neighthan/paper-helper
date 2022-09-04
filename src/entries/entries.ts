@@ -1,12 +1,9 @@
 import {PaperData} from './papers/paper'
 import {ToDo} from './todos/todos'
 
-const DB: any = 0
-
 const PaperTypes = {
   key: <"paper"> "paper",
   component: <"PaperDialog"> "PaperDialog",
-  table: DB.papers,
   class: new PaperData(),
   ctor: PaperData,
 }
@@ -14,7 +11,6 @@ const PaperTypes = {
 const TodoTypes = {
   key: <"todo"> "todo",
   component: <"ToDoDialog"> "ToDoDialog",
-  table: DB.todos,
   class: new ToDo(),
   ctor: ToDo,
 }

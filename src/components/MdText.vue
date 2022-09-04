@@ -24,8 +24,7 @@ import {loadMathjax} from "../mathjax"
 import { Entry } from "@/entries/entry"
 import { encrypt, cipherBufferToString } from "@/crypto"
 import {ToDo, updateTodos} from "@/entries/todos/todos"
-
-const DB: any = 0
+import { saveImg, writeEntryFile } from "@/backend/files"
 
 const autosave = true
 let autosaveIntervalId: any //number | null = null
@@ -64,7 +63,7 @@ export default class MdText extends Vue {
             let id = genId()
             let success = vue.addTextAtCursor(getMarkdownForImg(id))
             if (success) {
-              DB.imgs.add({id, dataUrl})
+              saveImg(id, dataUrl)
             }
           }
           reader.readAsDataURL(blob)
@@ -122,7 +121,7 @@ export default class MdText extends Vue {
     } else {
       this.entry.notesMd = this.text
     }
-    await DB.table(this.entry.constructor.name).put(this.entry)
+    await writeEntryFile(this.entry)
     await updateTodos(this.entry)
     if (this.entry instanceof ToDo) {
       this.entry.updateInEntry()

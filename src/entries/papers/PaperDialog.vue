@@ -44,8 +44,7 @@ import { PaperData } from "./paper"
 import {genId} from "../../utils"
 import {updateTodos} from "../todos/todos"
 import Settings from "@/backend/settings"
-
-const DB: any = 0
+import { writeEntryFile } from "@/backend/files"
 
 @Component
 export default class PaperDialog extends Vue {
@@ -103,11 +102,9 @@ export default class PaperDialog extends Vue {
       paper.timeAdded = Date.now()
       paper.id = genId()
     }
-    await DB.transaction("rw", DB.meta, DB.papers, DB.todos, async () => {
-      DB.papers.put(paper)
-      updateTodos(paper)
-      Settings.tags = [...new Set(Settings.tags.concat(paper.tags))]
-    })
+    await writeEntryFile(paper)
+    await updateTodos(paper)
+    Settings.tags = [...new Set(Settings.tags.concat(paper.tags))]
     this.$emit("addEntry", paper)
   }
 }

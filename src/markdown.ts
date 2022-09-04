@@ -1,8 +1,7 @@
 import hljs from "highlight.js"
 import MarkdownIt from "markdown-it"
 import MdFootnotes from "markdown-it-footnote"
-
-const DB: any = 0
+import {loadImg} from "./backend/files"
 
 const MdRenderer = new MarkdownIt({
   html: true,
@@ -30,19 +29,22 @@ function includeImgs(md: string, callback?: any) {
     return `<img src="${imgCache[id]}"`
   })
   if (unloadedIds) {
-    DB.imgs.bulkGet(unloadedIds).then((imgs: any) => {
-      let newImgLoaded = false
-      for (let img of imgs) {
-        if (!img) continue
-        imgCache[img.id] = img.dataUrl
-        newImgLoaded = true
-      }
-      if (newImgLoaded && callback !== undefined) {
-        callback()
-      }
-    })
+    loadImgs(unloadedIds, callback)
   }
   return md
+}
+
+async function loadImgs(unloadedIds: string[], callback?: any) {
+  let newImgLoaded = false
+  for (let id of unloadedIds) {
+    // TODO: convert from file to "dataUrl"
+    throw Error("fix loading images")
+    imgCache[id] = (await loadImg(id)) as any
+    newImgLoaded = true
+  }
+  if (newImgLoaded && callback !== undefined) {
+    callback()
+  }
 }
 
 function addMergeConflictStyling(md: string, callback?: any) {

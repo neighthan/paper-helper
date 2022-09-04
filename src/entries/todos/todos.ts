@@ -1,6 +1,5 @@
+import { deleteEntryFile, readAllEntries, readEntryFile, writeEntryFile } from "@/backend/files"
 import {Entry} from "@/entries/entry"
-
-const DB: any = 0 // TODO!!!
 
 const REMOVE = 0
 const RESTORE = 1
@@ -52,7 +51,7 @@ class ToDo extends Entry{
 
   async _update(mode: typeof REMOVE | typeof RESTORE | typeof UPDATE) {
     if (!this.entryId) return
-    const entry = <Entry> await DB.table(this.entryClass).get(this.entryId)
+    const entry = await readEntryFile(this.entryClass, this.entryId)
     const todoString = this.asString(entry)
     const lines = entry.content.split("\n")
     if (!lines[this.entryStartLine].toLowerCase().startsWith("@todo")) {
@@ -89,10 +88,8 @@ class ToDo extends Entry{
 
     // the length of this ToDo might have changed, so update the end line
     this.entryEndLine = this.entryStartLine + todoString.split("\n").length - 1
-    DB.transaction("rw", DB.todos, DB.table(this.entryClass), async () => {
-      DB.todos.put(this)
-      DB.table(this.entryClass).put(entry)
-    })
+    writeEntryFile(entry)
+    writeEntryFile(this)
   }
 }
 
@@ -160,16 +157,18 @@ async function updateTodos(entry: Entry) {
   const todos = getTodos(entry)
   console.log("found todos:", todos)
   if (todos.length === 0) return
-  await DB.transaction("rw", DB.todos, async () => {
-    await deleteTodos(entry)
-    await DB.todos.bulkAdd(todos)
-  }).catch((reason: any) => {
-    console.error(reason)
-  })
+  await deleteTodos(entry)
+  await Promise.all(todos.map(writeEntryFile))
 }
 
 async function deleteTodos(entry: Entry) {
-  await DB.todos.where("entryId").equals(entry.id).delete()
+  // TODO!! this will be slow now; without an index we have to check each file.
+  // should we just make an index file for this?
+  for (const todo of await readAllEntries("ToDo")) {
+    if ((<ToDo> todo).entryId === entry.id) {
+      deleteEntryFile(todo)
+    }
+  }
 }
 
 export {updateTodos, deleteTodos, ToDo}
