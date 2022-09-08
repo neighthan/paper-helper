@@ -42,7 +42,7 @@ export default class SavedQueryDialog extends Vue {
   timeAdded = -1
   lastSyncTime = -1
   entryType = "paper"
-  entryTypes = Object.keys(EntryTypes)
+  entryTypes = Object.keys(EntryTypes).filter(e => e !== "SavedQuery")
 
   created() {
     if (this.initialData) {

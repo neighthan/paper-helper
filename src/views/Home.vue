@@ -83,6 +83,7 @@ export default class Home extends Vue {
     this.savedQueries = Object.fromEntries(queries.map(q => [q.id, q]))
     if (Object.keys(this.savedQueries).length === 0) {
       for (const entryType of Object.keys(EntryTypes)) {
+        if (entryType === "SavedQuery") continue
         let query = new SavedQuery({filter: "", entryType, title: `All ${entryType}s`})
         writeEntryFile(query)
         Vue.set(this.savedQueries, query.id, query)

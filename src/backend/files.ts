@@ -59,8 +59,12 @@ function getEntryDir(entry: Entry) {
   return joinPath("/entries", entry.constructor.name)
 }
 
+function getEntryFname(entry: Entry) {
+  return `${entry.id}.md`
+}
+
 function getEntryPath(entry: Entry) {
-  return joinPath(getEntryDir(entry), `${entry.id}.md`)
+  return joinPath(getEntryDir(entry), getEntryFname(entry))
 }
 
 function toMarkdown(entry: Entry) {
@@ -137,7 +141,7 @@ async function readAllEntries(entryClass: string) {
 async function writeEntryFile(entry: Entry) {
   const path = getEntryPath(entry)
   await writeFile(path, toMarkdown(entry))
-  await gitCommit(path)
+  await gitCommit(getEntryDir(entry), getEntryFname(entry))
   console.log(`Wrote entry to ${path}`)
   console.log(toMarkdown(entry))
 }
@@ -145,7 +149,7 @@ async function writeEntryFile(entry: Entry) {
 async function deleteEntryFile(entry: Entry) {
   const path = getEntryPath(entry)
   await FS.unlink(path)
-  await gitRm(path)
+  await gitRm(getEntryDir(entry), getEntryFname(entry))
 }
 
 async function loadImg(id: string) {
