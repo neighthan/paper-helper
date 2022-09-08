@@ -27,7 +27,9 @@
 <script lang="ts">
 import { Component, Prop, Vue, Watch } from "vue-property-decorator"
 import {SavedQuery} from "@/backend/savedQueries"
-import {EntryTypes} from "@/entries/entries"
+import {getEntryTypes} from "@/entries/entries"
+
+const EntryTypes = getEntryTypes()
 
 @Component
 export default class SavedQueryDialog extends Vue {
@@ -63,7 +65,7 @@ export default class SavedQueryDialog extends Vue {
     this.filter = ""
     this.tags = []
     this.timeAdded = -1
-    this.entryType = "PaperData"
+    this.entryType = "Paper"
   }
 
   @Watch("initialData")

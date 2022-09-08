@@ -123,12 +123,13 @@ import {importInto} from "dexie-export-import"
 import {syncDropbox as syncDropbox_} from "../dbx"
 import {getPaperFromArxiv, getDataFromYouTube} from "../utils"
 import {updateTodos, deleteTodos, ToDo} from "@/entries/todos/todos"
-import {EntryTypes} from "@/entries/entries"
+import {getEntryTypes} from "@/entries/entries"
 import {Snackable} from "@/components/Snackbar.vue"
 import {deleteEntryFile, exportFiles, importFiles, readAllEntries, readEntryFile, writeEntryFile} from "@/backend/files"
 import {loadSavedQuery, SavedQuery} from "@/backend/savedQueries"
 import Settings from "@/backend/settings"
 
+const EntryTypes = getEntryTypes()
 type ValueOf<T> = T[keyof T]
 
 @Component({components: {PaperDialog, ToDoDialog, ExpansionItem, NavIcon}})
@@ -185,7 +186,8 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     }
   }
   addNotes(entry: E["class"]) {
-    this.$router.push({path: `/notes/${entry.constructor.name}/${entry.id}`})
+    console.log(entry, "in search")
+    this.$router.push({path: `/notes/${entry.entryClass}/${entry.id}`})
   }
   openFirst() {
     if (this.filteredEntries.length > 0) {
@@ -209,7 +211,8 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     } else {
       // in Python, I would try to find an h1 for the url if not on arxiv. We could try to
       // fetch(url) and do that here, but with CORS, we probably won't have access
-      data = new this.EntryClass()
+      // EntryClass shouldn't be SavedQuery; others don't require params
+      data = new this.EntryClass({} as any)
       // todo: a nicer way to discriminate Entry subtypes that might have this additional
       // field? we could use this later for entry.date too
       if ((<any> data).url !== undefined) {
@@ -264,6 +267,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     await loadFromFiles(this, this.queryId)
   }
   async addEntry(entry: E["class"]) {
+    console.log("adding entry to cached", entry)
     Vue.set(this.cachedEntries, entry.id, entry)
   }
   updatePriority(entry: E["class"], priority: number) {
@@ -300,7 +304,8 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     ;(<any> this.$refs.entryDialog).show(entry)
   }
   makeDefaultEntry(): E["class"] {
-    const entry = new this.EntryClass({tags: [...this.savedQueryTags]})
+    // EntryClass shouldn't be SavedQuery; others don't require params
+    const entry = new this.EntryClass({tags: [...this.savedQueryTags]} as any)
     if (this.query_tags !== "") {
       entry.tags.push(...this.query_tags.split(" "))
     }
@@ -308,7 +313,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   }
   get filteredEntries() {
     let data = Object.values(this.cachedEntries)
-    if (this.query_tags != "") {
+    if (this.query_tags !== "") {
       const query_tags = this.query_tags.toLowerCase().split(" ")
       data = data.filter(e => query_tags.every(tag => e.searchTags.has(tag)))
     }

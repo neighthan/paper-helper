@@ -1,6 +1,6 @@
 import snoowrap from "snoowrap"
 import {getPaperFromArxiv} from "@/utils"
-import { PaperData } from "@/entries/papers/paper"
+import { Paper } from "@/entries/papers/paper"
 import Settings from "@/backend/settings"
 import { writeEntryFile } from "./backend/files"
 
@@ -37,7 +37,7 @@ export default async function getAllSavedPosts(password: string) {
     if (!subreddits.includes(post.subreddit_name_prefixed)) continue
     if (!isSubmission(post)) continue
 
-    let data: PaperData
+    let data: Paper
     const redditURL = `https://www.reddit.com/${post.permalink}`
     if (post.domain === "arxiv.org") {
       data = await getPaperFromArxiv(post.url)
@@ -46,7 +46,7 @@ export default async function getAllSavedPosts(password: string) {
       data.tags.push("ml")
     } else {
       const date = new Date(post.created_utc * 1000)
-      data = new PaperData()
+      data = new Paper()
       data.title = post.title
       data.content = post.selftext
       data.tags = ["reddit", "ml"]

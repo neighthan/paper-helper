@@ -2,9 +2,11 @@ import { Dropbox } from 'dropbox'
 import { Entry } from "./entries/entry"
 import {logger} from "./logger"
 import {mergeTexts} from "./utils"
-import {EntryTypes} from "@/entries/entries"
+import {getEntryTypes} from "@/entries/entries"
 import Settings from "@/backend/settings"
 import { exportFiles } from './backend/files'
+
+const EntryTypes = getEntryTypes()
 
 const DROPBOX_PATH = "/paper-helper-db.json"
 const DB: any = 0

@@ -56,8 +56,8 @@ export default class ToDoDialog extends Vue {
   deadline = ""
   lastSyncTime = -1
   showDialog = false
-  entryId = ""
-  entryClass = ""
+  sourceId = ""
+  sourceClass = ""
   entryStartLine = -1
   entryEndLine = -1
 
@@ -74,8 +74,8 @@ export default class ToDoDialog extends Vue {
     this.content = todo.content
     this.timeAdded = todo.timeAdded
     this.deadline = todo.deadline
-    this.entryId = todo.entryId
-    this.entryClass = todo.entryClass
+    this.sourceId = todo.sourceId
+    this.sourceClass = todo.sourceClass
     this.entryStartLine = todo.entryStartLine
     this.entryEndLine = todo.entryEndLine
   }
@@ -89,11 +89,10 @@ export default class ToDoDialog extends Vue {
     todo.content = this.content
     todo.timeAdded = this.timeAdded
     todo.deadline = this.deadline
-    todo.entryId = this.entryId
-    todo.entryClass = this.entryClass
+    todo.sourceId = this.sourceId
+    todo.sourceClass = this.sourceClass
     todo.entryStartLine = this.entryStartLine
     todo.entryEndLine = this.entryEndLine
-    todo.table = "todos"
     return todo
   }
   cancel() {

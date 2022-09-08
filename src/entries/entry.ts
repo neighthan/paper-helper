@@ -7,6 +7,7 @@ class Entry {
   content: string
   timeAdded: number
   priority: number
+  entryClass: string
   iv?: Uint8Array
 
   constructor(
@@ -19,6 +20,7 @@ class Entry {
     this.content = content
     this.timeAdded = timeAdded
     this.priority = priority
+    this.entryClass = this.constructor.name
   }
 
   get dateString() {

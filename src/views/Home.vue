@@ -60,11 +60,13 @@ import {Component, Vue} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
 import {genId} from "../utils"
 import SavedQueryDialog from "@/components/SavedQueryDialog.vue"
-import {EntryTypes} from "@/entries/entries"
+import {getEntryTypes} from "@/entries/entries"
 import {syncAllDropbox} from "../dbx"
 import {Snackable} from "@/components/Snackbar.vue"
 import { deleteEntryFile, writeEntryFile } from "@/backend/files"
 import Settings from "@/backend/settings"
+
+const EntryTypes = getEntryTypes()
 
 @Component({components: {NavIcon, SavedQueryDialog}})
 export default class Home extends Vue {

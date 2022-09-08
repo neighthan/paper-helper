@@ -1,4 +1,4 @@
-import { EntryTypes } from '@/entries/entries'
+import { getEntryTypes } from '@/entries/entries'
 import { Entry } from '@/entries/entry'
 import LightningFS from '@isomorphic-git/lightning-fs'
 import { gitCommit, gitRm } from './git'
@@ -86,22 +86,30 @@ function fromMarkdown(md: string) {
   if (!md.startsWith("---\n")) {
     throw Error(`Invalid markdown; expected to start with '---\\n'.\n${md}`)
   }
-  md = md.slice(4)
-  if (!md.includes("\n---")) {
+  if (!md.slice(4).includes("\n---")) {
     throw Error(`Invalid markdown; expected to contain '\\n---'.\n${md}`)
   }
-  let [header, content] = md.split("\n---", 1)
-  const entry = new Entry({id: ""})
+  let [header, content] = md.slice(4).split("\n---", 2)
+  console.log("content:")
+  console.log(content)
+  const entryData: {[key: string]: any} = {}
   for (const line of header.split("\n")) {
     const [key, value] = line.split(" = ")
-    ;(entry as any)[key] = JSON.parse(value)
+    entryData[key] = JSON.parse(value)
   }
-  if (entry.id === "") {
+  if (entryData.id === undefined) {
     throw Error(`No ID found!\n${md}`)
   }
   content = (content ?? "").trim()
   if (content !== "") {
-    entry["content"] = content
+    entryData["content"] = content
+  }
+  const EntryTypes = getEntryTypes()
+  const entry = new EntryTypes[entryData.entryClass as keyof typeof EntryTypes].ctor(entryData as any)
+  if (md !== toMarkdown(entry)) {
+    console.error("fromMarkdown and toMarkdown not giving same results")
+    console.error(md)
+    console.error(toMarkdown(entry))
   }
   return entry
 }
@@ -113,6 +121,7 @@ async function readEntryFile(entryClass: string, entryId: string) {
   }
   const path = joinPath("/entries", entryClass, entryId)
   const md = await readFile(path)
+  console.log(md)
   return fromMarkdown(md)
 }
 
@@ -130,6 +139,7 @@ async function writeEntryFile(entry: Entry) {
   await writeFile(path, toMarkdown(entry))
   await gitCommit(path)
   console.log(`Wrote entry to ${path}`)
+  console.log(toMarkdown(entry))
 }
 
 async function deleteEntryFile(entry: Entry) {
@@ -149,7 +159,7 @@ async function saveImg(id: string, dataUrl: string) {
 async function setupDirs() {
   await mkdir("/entries")
   await mkdir("/entries/ToDo")
-  await mkdir("/entries/PaperData")
+  await mkdir("/entries/Paper")
   await mkdir("/entries/SavedQuery")
   // for (let EntryType of Object.values(EntryTypes)) {
     // await FS.mkdir(joinPath("/entries", EntryType.ctor.name))

@@ -44,9 +44,10 @@ export default class Notes extends Vue {
 
   async created() {
     const entry = await readEntryFile(this.entryClass, this.entryId)
+    console.log("in notes", entry)
     if (entry === undefined) {
       console.log(
-        `Couldn't find entry with id ${this.entryId} with class ${this.entryClass}!`
+        `Couldn't find entry with id ${this.entryId} and class ${this.entryClass}!`
       )
       return
     }

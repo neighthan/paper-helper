@@ -40,7 +40,7 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator"
-import { PaperData } from "./paper"
+import { Paper } from "./paper"
 import {genId} from "../../utils"
 import {updateTodos} from "../todos/todos"
 import Settings from "@/backend/settings"
@@ -61,12 +61,12 @@ export default class PaperDialog extends Vue {
   lastSyncTime = -1
   showDialog = false
 
-  show(paper: PaperData) {
+  show(paper: Paper) {
     this.updateFields(paper)
     this.showDialog = true
   }
 
-  updateFields(paper: PaperData) {
+  updateFields(paper: Paper) {
     this.id = paper.id
     this.priority = paper.priority.toString()
     this.tags = [...paper.tags]
@@ -79,7 +79,7 @@ export default class PaperDialog extends Vue {
   }
 
   get editedPaper() {
-    const paper = new PaperData()
+    const paper = new Paper()
     paper.id = this.id
     paper.priority = parseFloat(this.priority)
     paper.tags = this.tags.map(tag => tag.trim())
@@ -102,6 +102,7 @@ export default class PaperDialog extends Vue {
       paper.timeAdded = Date.now()
       paper.id = genId()
     }
+    console.log("writing paper...", paper)
     await writeEntryFile(paper)
     await updateTodos(paper)
     Settings.tags = [...new Set(Settings.tags.concat(paper.tags))]

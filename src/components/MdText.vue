@@ -40,6 +40,7 @@ export default class MdText extends Vue {
   renderVisible = true
 
   async created() {
+    console.log("entry in mdtext", this.entry)
     this.text = this.entry.notesMd
     if (autosave) {
       autosaveIntervalId = setInterval(() => {
@@ -121,6 +122,7 @@ export default class MdText extends Vue {
     } else {
       this.entry.notesMd = this.text
     }
+    console.log(this.entry)
     await writeEntryFile(this.entry)
     await updateTodos(this.entry)
     if (this.entry instanceof ToDo) {

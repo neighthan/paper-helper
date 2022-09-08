@@ -9,12 +9,23 @@ const UPDATE = 2
 // dbx syncing (if you want to be faster, only for the papers that've
 // been modified)
 class ToDo extends Entry{
-  entryId = "" // entry this todo was pulled from; empty if no entry
-  entryClass = "" // class of the entry, if entryId given
-  entryStartLine = -1 // -1 means this ToDo didn't come from another entry
-  entryEndLine = -1
-  deadline = ""
-  table = "todos"
+  sourceId: string // entry this todo was pulled from; empty if no entry
+  sourceClass: string // class of the entry, if entryId given
+  entryStartLine: number // -1 means this ToDo didn't come from another entry
+  entryEndLine: number
+  deadline: string
+
+  constructor(
+    {sourceId = "", sourceClass = "", entryStartLine = -1, entryEndLine = -1, deadline = "", ...rest}:
+    {sourceId?: string, sourceClass?: string, entryStartLine?: number, entryEndLine?: number, deadline?: string, [etc: string]: any} = {}
+  ) {
+    super(rest)
+    this.sourceId = sourceId
+    this.sourceClass = sourceClass
+    this.entryStartLine = entryStartLine
+    this.entryEndLine = entryEndLine
+    this.deadline = deadline
+  }
 
   /**
    * @param entry used to determine which tags are from the entry and shouldn't be
@@ -50,8 +61,8 @@ class ToDo extends Entry{
   }
 
   async _update(mode: typeof REMOVE | typeof RESTORE | typeof UPDATE) {
-    if (!this.entryId) return
-    const entry = await readEntryFile(this.entryClass, this.entryId)
+    if (!this.sourceId) return
+    const entry = await readEntryFile(this.sourceClass, this.sourceId)
     const todoString = this.asString(entry)
     const lines = entry.content.split("\n")
     if (!lines[this.entryStartLine].toLowerCase().startsWith("@todo")) {
@@ -143,8 +154,8 @@ function getTodos(entry: Entry) {
       todo.title = line
     }
     todo.entryEndLine = i - 1
-    todo.entryId = entry.id
-    todo.entryClass = entry.constructor.name
+    todo.sourceId = entry.id
+    todo.sourceClass = entry.constructor.name
     todos.push(todo)
   }
   return todos
@@ -165,7 +176,7 @@ async function deleteTodos(entry: Entry) {
   // TODO!! this will be slow now; without an index we have to check each file.
   // should we just make an index file for this?
   for (const todo of await readAllEntries("ToDo")) {
-    if ((<ToDo> todo).entryId === entry.id) {
+    if ((<ToDo> todo).sourceId === entry.id) {
       deleteEntryFile(todo)
     }
   }

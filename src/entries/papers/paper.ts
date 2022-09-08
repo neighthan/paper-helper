@@ -1,6 +1,6 @@
 import {Entry} from "@/entries/entry"
 
-export class PaperData extends Entry {
+export class Paper extends Entry {
   date: string
   url: string
   authors: string[]

@@ -14,7 +14,7 @@ import {Component, Vue} from "vue-property-decorator"
 import NavDrawer from "@/components/NavDrawer.vue"
 import {logger} from "@/logger"
 import PaperDialog from "@/entries/papers/PaperDialog.vue"
-import {PaperData} from "@/entries/papers/paper"
+import {Paper} from "@/entries/papers/paper"
 import {syncAllDropbox} from "@/dbx"
 import Snackbar from "@/components/Snackbar.vue"
 import Settings from "@/backend/settings"
@@ -30,7 +30,7 @@ export default class App extends Vue {
     console.log(`Logging at level ${logLevel}.`)
   }
 
-  openPaperDialog(paper: PaperData) {
+  openPaperDialog(paper: Paper) {
     ;(<PaperDialog> this.$refs.paperDialog).show(paper)
   }
 
@@ -48,7 +48,7 @@ export default class App extends Vue {
       } else if (e.ctrlKey && e.key == "b") {
         vue.$root.$emit("toggleNav")
       } else if (e.ctrlKey && e.altKey && e.key == "n") {
-        vue.openPaperDialog(new PaperData())
+        vue.openPaperDialog(new Paper())
       }
     }
     document.addEventListener("keydown", kbShortcuts)

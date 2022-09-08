@@ -1,11 +1,11 @@
-import { PaperData } from "./entries/papers/paper"
+import { Paper } from "./entries/papers/paper"
 
 export function genId() {
   return Date.now().toString(16) + Math.random().toString(16).substr(2)
 }
 
 export async function getPaperFromArxiv(url: string) {
-  const data = new PaperData()
+  const data = new Paper()
   // should be https://arxiv.org/abs/<id> or https://arxiv.org/pdf/<id>.pdf
   const id = url.split("/").pop()?.replace(".pdf", "")
   data.url = `https://arxiv.org/abs/${id}` // always use abstract url, not pdf
@@ -32,10 +32,10 @@ export async function getPaperFromArxiv(url: string) {
 }
 
 /**
- * @returns default PaperData if there's an error.
+ * @returns default Paper if there's an error.
  */
 export async function getDataFromYouTube(url: string) {
-  const data = new PaperData()
+  const data = new Paper()
   data.url = url
   const apiKey = "AIzaSyAqYAFG23NRZbHT3QhrkvAX7AX0PWP8dJE"
   const match = url.match(/\?v=([^&]+)/)
