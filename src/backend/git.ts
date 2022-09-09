@@ -1,17 +1,31 @@
 import git from 'isomorphic-git'
-import {FS} from "@/backend/files"
+import {CFS} from "@/backend/files"
 
+const GIT_DIR = "/"
 
-// if most recent commit is "autosave <file>" and it matches the current file,
+// TODO: if most recent commit is "autosave <file>" and it matches the current file,
 // then amend that commit instead of making a new one
-async function gitCommit(dir: string, fname: string) {
-  await git.add({fs: FS, dir: dir, filepath: fname})
-  await git.commit({fs: FS, message: `Save ${fname}.`})
+async function gitCommit(filepath: string) {
+  if (filepath.startsWith("/")) {
+    // needs to be relative to GIT_DIR
+    filepath = filepath.slice(1)
+  }
+  await git.add({fs: CFS, filepath, dir: GIT_DIR})
+  await git.commit({fs: CFS, message: `Save ${filepath}.`, dir: GIT_DIR})
 }
 
-async function gitRm(dir: string, fname: string) {
-  await git.remove({fs: FS, dir, filepath: fname})
-  await git.commit({fs: FS, message: `Delete ${fname}.`})
+async function gitRm(filepath: string) {
+  if (filepath.startsWith("/")) {
+    // needs to be relative to GIT_DIR
+    filepath = filepath.slice(1)
+  }
+  await git.remove({fs: CFS, filepath, dir: GIT_DIR})
+  await git.commit({fs: CFS, message: `Delete ${filepath}.`, dir: GIT_DIR})
 }
 
-export {gitCommit, gitRm}
+async function gitInit() {
+  await git.init({fs: CFS, dir: GIT_DIR})
+  await git.setConfig({fs: CFS, dir: GIT_DIR, path: "user.name", value: "note-taker"})
+}
+
+export {gitCommit, gitRm, gitInit}

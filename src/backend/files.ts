@@ -1,10 +1,11 @@
 import { getEntryTypes } from '@/entries/entries'
 import { Entry } from '@/entries/entry'
 import LightningFS from '@isomorphic-git/lightning-fs'
-import { gitCommit, gitRm } from './git'
+import { gitCommit, gitInit, gitRm } from './git'
 
 const FS_NAME = "notes"
-const FS = new LightningFS(FS_NAME).promises
+const CFS = new LightningFS(FS_NAME)
+const FS = CFS.promises
 const IMG_DIR = "/imgs"
 
 function joinPath(...segments: string[]) {
@@ -141,7 +142,7 @@ async function readAllEntries(entryClass: string) {
 async function writeEntryFile(entry: Entry) {
   const path = getEntryPath(entry)
   await writeFile(path, toMarkdown(entry))
-  await gitCommit(getEntryDir(entry), getEntryFname(entry))
+  await gitCommit(path)
   console.log(`Wrote entry to ${path}`)
   console.log(toMarkdown(entry))
 }
@@ -149,7 +150,7 @@ async function writeEntryFile(entry: Entry) {
 async function deleteEntryFile(entry: Entry) {
   const path = getEntryPath(entry)
   await FS.unlink(path)
-  await gitRm(getEntryDir(entry), getEntryFname(entry))
+  await gitRm(path)
 }
 
 async function loadImg(id: string) {
@@ -161,10 +162,14 @@ async function saveImg(id: string, dataUrl: string) {
 }
 
 async function setupDirs() {
-  await mkdir("/entries")
-  await mkdir("/entries/ToDo")
-  await mkdir("/entries/Paper")
-  await mkdir("/entries/SavedQuery")
+  const promises = [
+    mkdir("/entries"),
+    mkdir("/entries/ToDo"),
+    mkdir("/entries/Paper"),
+    mkdir("/entries/SavedQuery"),
+    gitInit(),
+  ]
+  return Promise.all(promises)
   // for (let EntryType of Object.values(EntryTypes)) {
     // await FS.mkdir(joinPath("/entries", EntryType.ctor.name))
   // }
@@ -172,6 +177,7 @@ async function setupDirs() {
 
 export {
   FS,
+  CFS,
   joinPath,
   readFile,
   writeFile,
