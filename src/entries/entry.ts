@@ -9,10 +9,11 @@ class Entry {
   priority: number
   entryClass: string
   iv?: Uint8Array
+  extraParams?: {[key: string]: any}
 
   constructor(
-    {id = genId(), title = "", tags = [], content = "", timeAdded = Date.now(), priority = 0}:
-    {id?: string, title?: string, tags?: string[], content?: string, timeAdded?: number, priority?: number} = {}
+    {id = genId(), title = "", tags = [], content = "", timeAdded = Date.now(), priority = 0, ...rest}:
+    {id?: string, title?: string, tags?: string[], content?: string, timeAdded?: number, priority?: number, [etc: string]: any} = {}
   ) {
     this.id = id
     this.title = title
@@ -21,6 +22,7 @@ class Entry {
     this.timeAdded = timeAdded
     this.priority = priority
     this.entryClass = this.constructor.name
+    this.extraParams = rest
   }
 
   get dateString() {

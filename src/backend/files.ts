@@ -70,9 +70,15 @@ function getEntryPath(entry: Entry) {
 
 function toMarkdown(entry: Entry) {
   const header = []
-  for (let [key, value] of Object.entries(entry)) {
+  for (const [key, value] of Object.entries(entry)) {
     if (key === "content") continue
-    header.push(`${key} = ${JSON.stringify(value)}`)
+    if (key === "extraParams") {
+      for (const [extraKey, extraValue] of Object.entries(value)) {
+        header.push(`${extraKey} = ${JSON.stringify(extraValue)}`)
+      }
+    } else {
+      header.push(`${key} = ${JSON.stringify(value)}`)
+    }
   }
   const md = `---\n${header.join("\n")}\n---\n\n${entry.content ?? ""}`
   return md
@@ -95,8 +101,6 @@ function fromMarkdown(md: string) {
     throw Error(`Invalid markdown; expected to contain '\\n---'.\n${md}`)
   }
   let [header, content] = md.slice(4).split("\n---", 2)
-  console.log("content:")
-  console.log(content)
   const entryData: {[key: string]: any} = {}
   for (const line of header.split("\n")) {
     const [key, value] = line.split(" = ")
@@ -110,7 +114,9 @@ function fromMarkdown(md: string) {
     entryData["content"] = content
   }
   const EntryTypes = getEntryTypes()
-  const entry = new EntryTypes[entryData.entryClass as keyof typeof EntryTypes].ctor(entryData as any)
+  const entryClass = entryData.entryClass
+  delete entryData.entryClass
+  const entry = new EntryTypes[entryClass as keyof typeof EntryTypes].ctor(entryData as any)
   if (md !== toMarkdown(entry)) {
     console.error("fromMarkdown and toMarkdown not giving same results")
     console.error(md)
