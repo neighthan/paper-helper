@@ -6,6 +6,7 @@
     @keydown.ctrl.s.prevent="save"
   >
     <v-card>
+      <v-card-title>New Paper</v-card-title>
       <v-card-text>
         <v-text-field label="Title" v-model="title" dense autofocus></v-text-field>
         <v-combobox label="Tags" v-model="tags" :items="all_tags" multiple :delimiters="[' ']" dense small-chips>
