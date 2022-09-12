@@ -166,7 +166,9 @@ function getTodos(entry: Entry) {
  */
 async function updateTodos(entry: Entry) {
   const todos = getTodos(entry)
-  console.log("found todos:", todos)
+  if (todos.length) {
+    console.log("found todos:", todos)
+  }
   if (todos.length === 0) return
   await deleteTodos(entry)
   await Promise.all(todos.map(writeEntryFile))

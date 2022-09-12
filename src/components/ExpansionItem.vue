@@ -68,6 +68,7 @@ export default class ExpansionItem extends Vue {
   priority: string | number = this.entry.priority
   min_priority = -100
   max_priority = 100
+  imgCache = {}
 
   open_link(url: string) {
     window.open(url)
@@ -95,13 +96,7 @@ export default class ExpansionItem extends Vue {
     }
   }
   get mdNotes() {
-    return renderMarkdown(this.entry.content, () => {
-      // This is just to make Vue re-render by making it think the abstract changed.
-      // Is there a better method for this?
-      const notes = this.entry.content
-      Vue.set(this.entry, "notes", "")
-      Vue.set(this.entry, "notes", notes)
-    })
+    return renderMarkdown(this.entry.content, this.imgCache)
   }
 }
 </script>

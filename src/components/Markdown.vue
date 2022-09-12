@@ -10,16 +10,10 @@ import {renderMarkdown} from "../markdown"
 @Component
 export default class Markdown extends Vue {
   @Prop() private mdString!: string
+  imgCache: {[key: string]: string} = {}
 
   get markdown() {
-    return renderMarkdown(this.mdString)
-    // return renderMarkdown(this.mdString, () => {
-      // This is just to make Vue re-render by making it think the text changed.
-      // Is there a better method for this?
-      // let text = this.text
-      // this.text = ""
-      // this.text = text
-    // })
+    return renderMarkdown(this.mdString, this.imgCache)
   }
 }
 </script>

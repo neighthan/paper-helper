@@ -267,7 +267,6 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     await loadFromFiles(this, this.queryId)
   }
   async addEntry(entry: E["class"]) {
-    console.log("adding entry to cached", entry)
     Vue.set(this.cachedEntries, entry.id, entry)
   }
   updatePriority(entry: E["class"], priority: number) {

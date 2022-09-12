@@ -103,7 +103,6 @@ export default class PaperDialog extends Vue {
       paper.timeAdded = Date.now()
       paper.id = genId()
     }
-    console.log("writing paper...", paper)
     await writeEntryFile(paper)
     await updateTodos(paper)
     Settings.tags = [...new Set(Settings.tags.concat(paper.tags))]

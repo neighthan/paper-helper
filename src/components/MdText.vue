@@ -19,7 +19,7 @@ import {Component, Vue, Prop, Watch} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
 import Markdown from "@/components/Markdown.vue"
 import {genId} from "../utils"
-import {clearImgCache, getMarkdownForImg} from "../markdown"
+import {getMarkdownForImg} from "../markdown"
 import {loadMathjax} from "../mathjax"
 import { Entry } from "@/entries/entry"
 import { encrypt, cipherBufferToString } from "@/crypto"
@@ -40,7 +40,6 @@ export default class MdText extends Vue {
   renderVisible = true
 
   async created() {
-    console.log("entry in mdtext", this.entry)
     this.text = this.entry.notesMd
     if (autosave) {
       autosaveIntervalId = setInterval(() => {
@@ -122,7 +121,6 @@ export default class MdText extends Vue {
     } else {
       this.entry.notesMd = this.text
     }
-    console.log(this.entry)
     await writeEntryFile(this.entry)
     await updateTodos(this.entry)
     if (this.entry instanceof ToDo) {

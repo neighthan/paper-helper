@@ -126,13 +126,11 @@ function fromMarkdown(md: string) {
 }
 
 async function readEntryFile(entryClass: string, entryId: string) {
-  console.log(`Trying to read a ${entryClass} with id ${entryId}`)
   if (!entryId.endsWith(".md")) {
     entryId = `${entryId}.md`
   }
   const path = joinPath("/entries", entryClass, entryId)
   const md = await readFile(path)
-  console.log(md)
   return fromMarkdown(md)
 }
 
@@ -167,6 +165,7 @@ async function saveImg(id: string, dataUrl: string) {
 
 async function setupDirs() {
   const promises = [
+    mkdir("/imgs"),
     mkdir("/entries"),
     mkdir("/entries/ToDo"),
     mkdir("/entries/Paper"),
