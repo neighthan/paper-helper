@@ -28,13 +28,12 @@
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator"
 import NavIcon from "@/components/NavIcon.vue"
-import Markdown from "@/components/Markdown.vue"
 import MdText from "@/components/MdText.vue"
 import { Entry } from "@/entries/entry"
 import { decrypt, stringToCipherBuffer } from "@/crypto"
 import { joinPath, readEntryFile } from "@/backend/files"
 
-@Component({components: {NavIcon, Markdown, MdText}})
+@Component({components: {NavIcon, MdText}})
 export default class Notes extends Vue {
   entryId = this.$route.params["id"]
   entryClass = this.$route.params["class"]

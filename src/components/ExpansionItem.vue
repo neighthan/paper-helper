@@ -50,8 +50,7 @@
       </v-card>
     </v-expansion-panel-header>
     <v-expansion-panel-content>
-      <div class="abstract" v-html="mdNotes" style="text-align: left; word-wrap: break-word">
-      </div>
+      <Markdown :mdString="this.entry.content"/>
     </v-expansion-panel-content>
   </div>
 </template>
@@ -59,16 +58,15 @@
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator"
 import {Entry} from "@/entries/entry"
-import {renderMarkdown} from "../markdown"
+import Markdown from "@/components/Markdown.vue"
 
-@Component
+@Component({components: {Markdown}})
 export default class ExpansionItem extends Vue {
   @Prop() private entry!: Entry
   editingPriority = false
   priority: string | number = this.entry.priority
   min_priority = -100
   max_priority = 100
-  imgCache = {}
 
   open_link(url: string) {
     window.open(url)
@@ -95,17 +93,10 @@ export default class ExpansionItem extends Vue {
       this.$emit("updatePriority", this.entry, this.priority)
     }
   }
-  get mdNotes() {
-    return renderMarkdown(this.entry.content, this.imgCache)
-  }
 }
 </script>
 
 <style scoped lang="scss">
-.abstract {
-  font-size: medium;
-}
-
 .v-expansion-panel-header {
   padding: 10px 16px;
 }
