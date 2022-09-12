@@ -161,7 +161,7 @@ export default class Settings extends Vue {
           } else {
             entry.tags[entry.tags.indexOf(this.oldTag)] = this.newTag
           }
-          writeEntryFile(entry)
+          writeEntryFile(entry, false)
           updateTodos(entry) // so the todos' tags will still match the entry's
           nModified++
         }
@@ -212,7 +212,7 @@ export default class Settings extends Vue {
         date: "2020/02/21",
       })
 
-      writeEntryFile(paper)
+      writeEntryFile(paper, false)
     }
   }
 }

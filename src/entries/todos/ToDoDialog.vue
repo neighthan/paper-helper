@@ -106,7 +106,7 @@ export default class ToDoDialog extends Vue {
       todo.timeAdded = Date.now()
       todo.id = genId()
     }
-    await writeEntryFile(todo)
+    await writeEntryFile(todo, false)
     Settings.tags = [...new Set(Settings.tags.concat(todo.tags))]
     todo.updateInEntry()
     this.$emit("addEntry", todo)

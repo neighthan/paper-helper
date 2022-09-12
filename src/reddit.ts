@@ -53,7 +53,7 @@ export default async function getAllSavedPosts(password: string) {
       data.date = date.toISOString().split("T")[0]
       data.url = redditURL
     }
-    writeEntryFile(data).then(() => {
+    writeEntryFile(data, false).then(() => {
       post.unsave()
     })
     nPapersAdded += 1

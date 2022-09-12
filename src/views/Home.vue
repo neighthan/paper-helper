@@ -85,7 +85,7 @@ export default class Home extends Vue {
       for (const entryType of Object.keys(EntryTypes)) {
         if (entryType === "SavedQuery") continue
         let query = new SavedQuery({filter: "", entryType, title: `All ${entryType}s`})
-        writeEntryFile(query)
+        writeEntryFile(query, false)
         Vue.set(this.savedQueries, query.id, query)
       }
     }
@@ -99,7 +99,7 @@ export default class Home extends Vue {
         query.timeAdded = Date.now()
         query.id = genId()
       }
-      await writeEntryFile(query)
+      await writeEntryFile(query, false)
       Vue.set(this.savedQueries, query.id, query)
     }
   }
@@ -122,7 +122,7 @@ export default class Home extends Vue {
   undeleteQuery() {
     this.showUndeleteSnackbar = false
     if (this.deletedQuery !== null) {
-      writeEntryFile(this.deletedQuery)
+      writeEntryFile(this.deletedQuery, false)
       Vue.set(this.savedQueries, this.deletedQuery.id, this.deletedQuery)
     }
   }

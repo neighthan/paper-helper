@@ -99,8 +99,8 @@ class ToDo extends Entry{
 
     // the length of this ToDo might have changed, so update the end line
     this.entryEndLine = this.entryStartLine + todoString.split("\n").length - 1
-    writeEntryFile(entry)
-    writeEntryFile(this)
+    writeEntryFile(entry, false)
+    writeEntryFile(this, false)
   }
 }
 
@@ -171,7 +171,7 @@ async function updateTodos(entry: Entry) {
   }
   if (todos.length === 0) return
   await deleteTodos(entry)
-  await Promise.all(todos.map(writeEntryFile))
+  await Promise.all(todos.map(t => writeEntryFile(t, false)))
 }
 
 async function deleteTodos(entry: Entry) {

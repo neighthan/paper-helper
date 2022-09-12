@@ -1,7 +1,7 @@
 import { getEntryTypes } from '@/entries/entries'
 import { Entry } from '@/entries/entry'
 import LightningFS from '@isomorphic-git/lightning-fs'
-import { gitCommit, gitInit, gitRm } from './git'
+import { gitCommitHard, gitCommitAutoAmend, gitInit, gitRm } from './git'
 
 const FS_NAME = "notes"
 const CFS = new LightningFS(FS_NAME)
@@ -143,10 +143,14 @@ async function readAllEntries(entryClass: string) {
   return entries
 }
 
-async function writeEntryFile(entry: Entry) {
+async function writeEntryFile(entry: Entry, hardCommit: boolean) {
   const path = getEntryPath(entry)
   await writeFile(path, toMarkdown(entry))
-  await gitCommit(path)
+  if (hardCommit) {
+    await gitCommitHard(path)
+  } else {
+    await gitCommitAutoAmend(path)
+  }
 }
 
 async function deleteEntryFile(entry: Entry) {

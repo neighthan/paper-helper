@@ -177,7 +177,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   undeleteEntry() {
     this.show_undelete_snackbar = false
     if (this.deletedEntry !== null) {
-      writeEntryFile(this.deletedEntry)
+      writeEntryFile(this.deletedEntry, false)
       updateTodos(this.deletedEntry)
       Vue.set(this.cachedEntries, this.deletedEntry.id, this.deletedEntry)
       if (this.deletedEntry instanceof ToDo) {
@@ -271,7 +271,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   }
   updatePriority(entry: E["class"], priority: number) {
     entry.priority = priority
-    writeEntryFile(entry)
+    writeEntryFile(entry, false)
     updateTodos(entry) // so the todos' priorities will match the entry's
     if (entry instanceof ToDo) {
       entry.updateInEntry()
@@ -294,7 +294,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
         // support for queries that return multiple entry types. Maybe
         // you specify the allowed entry types just like the allowed tags
       })
-      await writeEntryFile(query)
+      await writeEntryFile(query, false)
     }
     this.$router.push({path: `/search/${query.id}`})
   }

@@ -121,7 +121,7 @@ export default class MdText extends Vue {
     } else {
       this.entry.notesMd = this.text
     }
-    await writeEntryFile(this.entry)
+    await writeEntryFile(this.entry, false)
     await updateTodos(this.entry)
     if (this.entry instanceof ToDo) {
       this.entry.updateInEntry()
