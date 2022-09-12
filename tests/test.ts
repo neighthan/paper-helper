@@ -22,6 +22,12 @@ divs with v-card class from that, select all div.v-card with :has-text('Open') s
 the SavedQuery cards all have an Open button. This is more robust to changes in the
 layout; try to make the tests so that they work as long as what the user sees is
 correct / hasn't changed instead of testing from the developer side.
+
+> Playwright scripts run in your Playwright environment. Your page scripts run in the browser page environment. Those environments don't intersect, they are running in different virtual machines in different processes and even potentially on different computers.
+> The page.evaluate(pageFunction[, arg]) API can run a JavaScript function in the context of the web page and bring results back to the Playwright environment. Browser globals like window and document can be used in evaluate.
+* So things like `document` and `IntersectionObserver` only work within `evaluate`.
+
+Try to get rid of `waitForTimeout` if you can.
 */
 
 import { test, expect, Locator, Page } from '@playwright/test'
@@ -57,6 +63,24 @@ function getTextAreaFromLabel(page: Page | Locator, label: string) {
 
 function getTextAreaValueFromLabel(page: Page | Locator, label: string) {
   return getTextAreaFromLabel(page, label).inputValue()
+}
+
+// https://stackoverflow.com/a/68848306/4880003
+// based on Puppeteer's method
+async function isIntersectingViewport(locator: Locator): Promise<boolean> {
+  return locator.evaluate(async element => {
+    const visibleRatio: number = await new Promise(resolve => {
+      const observer = new IntersectionObserver(entries => {
+        resolve(entries[0].intersectionRatio)
+        observer.disconnect()
+      })
+      observer.observe(element)
+      // Firefox doesn't call IntersectionObserver callback unless
+      // there are rafs.
+      requestAnimationFrame(() => {})
+    })
+    return visibleRatio > 0
+  })
 }
 
 test.beforeEach(async ({ page }) => {
@@ -101,6 +125,16 @@ async function checkPaper(page: Page, paper: any) {
     expect(await paperLocator.locator("span.v-chip").allInnerTexts()).toStrictEqual(paper.tags)
 }
 
+test("Keyboard shortcuts.", async ({page}) => {
+  const nav = page.locator("nav.v-navigation-drawer")
+  expect(await isIntersectingViewport(nav)).toBe(false)
+  await page.keyboard.press("Control+b")
+  await page.waitForTimeout(100)
+  expect(await isIntersectingViewport(nav)).toBe(true)
+  await page.keyboard.press("Control+b")
+  await page.waitForTimeout(1000)
+  expect(await isIntersectingViewport(nav)).toBe(false)
+})
 
 test("Add a paper from arxiv", async ({page}) => {
   const paper = {

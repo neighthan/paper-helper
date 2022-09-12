@@ -149,8 +149,6 @@ async function writeEntryFile(entry: Entry) {
   const path = getEntryPath(entry)
   await writeFile(path, toMarkdown(entry))
   await gitCommit(path)
-  console.log(`Wrote entry to ${path}`)
-  console.log(toMarkdown(entry))
 }
 
 async function deleteEntryFile(entry: Entry) {
