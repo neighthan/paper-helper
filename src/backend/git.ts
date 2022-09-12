@@ -5,14 +5,21 @@ the commit, whether they were modified or not. So I'm storing the modified files
 commit message
 */
 
-import git from 'isomorphic-git'
+import git, { ReadCommitResult } from 'isomorphic-git'
 import {CFS, FS} from "@/backend/files"
 
 const GIT_DIR = "/"
 const HARD = "hard"
 
 async function gitCommitAutoAmend(filepath: string) {
-  const prevCommits = await git.log({fs: CFS, dir: GIT_DIR, depth: 2})
+  let prevCommits: ReadCommitResult[] = []
+  try { // fails if no commits yet
+    prevCommits = await git.log({fs: CFS, dir: GIT_DIR, depth: 2})
+  } catch(e) {
+    if (!(e instanceof Error && e.message.startsWith("Could not find refs/heads/master"))) {
+      throw e
+    }
+  }
   if (prevCommits.length === 0) {
     return gitCommitSoft(filepath)
   }
