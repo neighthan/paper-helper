@@ -77,11 +77,15 @@ async function gitCommitAmend(filepath: string) {
     console.error("Can't amend commit without >=2 previous commits.")
     return gitCommitSoft(filepath)
   }
-  const files = prevCommits[0].commit.message.split("\n")
-  files.push(filepath)
+  const files = prevCommits[0].commit.message.trim().split("\n")
+  if (!files.includes(filepath)) {
+    files.push(filepath)
+  }
 
   await gitReset()
-  await git.add({fs: CFS, filepath: files as any, dir: GIT_DIR})
+  await Promise.all(
+    files.map(f => git.add({fs: CFS, filepath: f, dir: GIT_DIR}))
+  )
   await git.commit({fs: CFS, message: files.join("\n"), dir: GIT_DIR})
 }
 
@@ -102,12 +106,16 @@ async function gitReset({hard = false}: {hard?: boolean} = {}) {
 async function gitRm(filepath: string) {
   filepath = relativize(filepath)
   await git.remove({fs: CFS, filepath, dir: GIT_DIR})
-  await git.commit({fs: CFS, message: `Delete ${filepath}.`, dir: GIT_DIR})
+  await git.commit({fs: CFS, message: HARD, dir: GIT_DIR})
 }
 
 async function gitInit() {
   await git.init({fs: CFS, dir: GIT_DIR})
   await git.setConfig({fs: CFS, dir: GIT_DIR, path: "user.name", value: "note-taker"})
+}
+
+function gitLog(depth: number) {
+  return git.log({fs: CFS, dir: GIT_DIR, depth: depth})
 }
 
 /**
@@ -127,4 +135,4 @@ function relativize(path: string) {
   return path.startsWith("/") ? path.slice(1) : path
 }
 
-export {gitCommitAutoAmend, gitCommitHard, gitRm, gitInit}
+export {gitCommitAutoAmend, gitCommitHard, gitRm, gitInit, gitLog}

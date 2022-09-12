@@ -84,6 +84,20 @@ function toMarkdown(entry: Entry) {
   return md
 }
 
+function parseHeader(md: string) {
+  if (!md.startsWith("---\n") || !md.slice(4).includes("\n---")) {
+    return {header: {}, content: md}
+  }
+  let [headerStr, content] = md.slice(4).split("\n---", 2)
+  const header: {[key: string]: any} = {}
+  for (const line of headerStr.split("\n")) {
+    const [key, value] = line.split(" = ")
+    header[key] = JSON.parse(value)
+  }
+  content = (content ?? "").trim()
+  return {header, content}
+}
+
 /**
  * @param md must be formatted like
  * ---
@@ -93,30 +107,33 @@ function toMarkdown(entry: Entry) {
  *
  * <content>
  */
-function fromMarkdown(md: string) {
-  if (!md.startsWith("---\n")) {
-    throw Error(`Invalid markdown; expected to start with '---\\n'.\n${md}`)
+function fromMarkdown(md: string, DefaultEntryClass?: typeof Entry) {
+  const {header, content} = parseHeader(md)
+  console.log("header: ", header)
+  if (header.entryClass === undefined) {
+    // should only happen when importing a new file; then default class is given
+    if (DefaultEntryClass === undefined) {
+      console.error(md)
+      throw Error("No entryClass found but DefaultEntryClass was not defined!")
+    }
+    const entry = new DefaultEntryClass()
+    entry.content = content
+    // there may be custom metadata on imported files, so make sure to keep it
+    // TODO: what if extraParams collide with the normal metadata we save?
+    entry.extraParams = header
+    return entry
   }
-  if (!md.slice(4).includes("\n---")) {
-    throw Error(`Invalid markdown; expected to contain '\\n---'.\n${md}`)
-  }
-  let [header, content] = md.slice(4).split("\n---", 2)
-  const entryData: {[key: string]: any} = {}
-  for (const line of header.split("\n")) {
-    const [key, value] = line.split(" = ")
-    entryData[key] = JSON.parse(value)
-  }
-  if (entryData.id === undefined) {
+
+  if (header.id === undefined) {
     throw Error(`No ID found!\n${md}`)
   }
-  content = (content ?? "").trim()
   if (content !== "") {
-    entryData["content"] = content
+    header["content"] = content
   }
   const EntryTypes = getEntryTypes()
-  const entryClass = entryData.entryClass
-  delete entryData.entryClass
-  const entry = new EntryTypes[entryClass as keyof typeof EntryTypes].ctor(entryData as any)
+  const entryClass = header.entryClass
+  delete header.entryClass
+  const entry = new EntryTypes[entryClass as keyof typeof EntryTypes].ctor(header as any)
   if (md !== toMarkdown(entry)) {
     console.error("fromMarkdown and toMarkdown not giving same results")
     console.error(md)

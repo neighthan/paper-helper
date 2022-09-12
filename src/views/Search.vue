@@ -82,7 +82,7 @@
 
           <v-tooltip open-delay="1000">
             <template v-slot:activator="{on}">
-              <v-btn icon v-on="on" @click="load_file">
+              <v-btn icon v-on="on" @click="getFiles">
                 <v-icon>arrow_upward</v-icon>
               </v-btn>
             </template>
@@ -125,7 +125,7 @@ import {getPaperFromArxiv, getDataFromYouTube} from "../utils"
 import {updateTodos, deleteTodos, ToDo} from "@/entries/todos/todos"
 import {getEntryTypes} from "@/entries/entries"
 import {Snackable} from "@/components/Snackbar.vue"
-import {deleteEntryFile, exportFiles, importFiles, readAllEntries, readEntryFile, writeEntryFile} from "@/backend/files"
+import {deleteEntryFile, exportFiles, fromMarkdown, importFiles, readAllEntries, readEntryFile, writeEntryFile} from "@/backend/files"
 import {loadSavedQuery, SavedQuery} from "@/backend/savedQueries"
 import Settings from "@/backend/settings"
 
@@ -247,23 +247,37 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
       console.error(error)
     }
   }
-  load_file() {
+  getFiles() {
     const vue = this
     const file_picker = document.createElement("input")
     file_picker.type = "file"
-    file_picker.accept = "application/json"
+    // file_picker.accept = "application/json"
+    // file_picker.accept = "application/markdown"
+    file_picker.accept = ".md"
+    file_picker.multiple = true
     file_picker.addEventListener("change", function(event) {
       if (event === null) return
       const input = event.target as HTMLInputElement
       if (input.files !== null && input.files.length > 0) {
-        vue.load_data(input.files[0])
+        vue.importFiles(input.files)
       }
     })
     file_picker.click()
   }
-  async load_data(jsonFile: File) {
-    // await importInto(DB, jsonFile, {overwriteValues: true})
-    await importFiles(jsonFile)
+  async importFiles(mdFiles: FileList) {
+    for (const file of mdFiles) {
+      const md = await file.text()
+      const entry = fromMarkdown(md, this.EntryClass)
+      if (entry.title === "") {
+        entry.title = file.name.replace(".md", "")
+      }
+      entry.timeAdded = file.lastModified
+      entry.tags.push(...this.savedQueryTags)
+      await writeEntryFile(entry, false)
+    }
+    // TODO: probably don't need to call this now. Just push to list of files?
+    // well, then you need to apply the savedquery yourself, though, so maybe do
+    // keep this...
     await loadFromFiles(this, this.queryId)
   }
   async addEntry(entry: E["class"]) {
