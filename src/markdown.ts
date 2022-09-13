@@ -22,11 +22,11 @@ let imgCache: {[key: string]: string} = {}
 // callback can be used to make a component re-render once images are loaded
 function includeImgs(md: string, callback?: any) {
   let unloadedIds: string[] = []
-  md = md.replace(/<img src=@"(\w+)"/g, (fullMatch, id) => {
+  md = md.replace(/<img ([A-Za-z]+?=".+?")*? src=@"(\w+?)"/g, (fullMatch, attrs, id) => {
     if (!imgCache.hasOwnProperty(id)) {
       unloadedIds.push(id)
     }
-    return `<img src="${imgCache[id]}"`
+    return `<img ${attrs} src="${imgCache[id]}"`
   })
   if (unloadedIds) {
     DB.imgs.bulkGet(unloadedIds).then((imgs) => {
