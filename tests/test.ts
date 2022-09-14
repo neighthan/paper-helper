@@ -28,6 +28,11 @@ correct / hasn't changed instead of testing from the developer side.
 * So things like `document` and `IntersectionObserver` only work within `evaluate`.
 
 Try to get rid of `waitForTimeout` if you can.
+
+I think doing locator.filter({hasText: text}) checks that the element or a child of it
+has `text` but won't work if `text` is split across multiple children (e.g. different
+`<p>` elements). So if you expect that, you need to do the check differently (e.g. maybe
+join allInnerTexts and do a substring check).
 */
 
 import { test, expect, Locator, Page } from '@playwright/test'
@@ -118,10 +123,14 @@ async function checkPaper(page: Page, paper: any) {
     // now check that the saved entry looks right
     const paperLocator = page.locator(CSS_EXP_PANEL, {hasText: paper.title})
     await paperLocator.click()
-    await existsOnce(paperLocator.filter({hasText: paper.content}))
+    // the lines are trimmed during processing the new entry
+    const expContent = paper.content.split("\n").map((line: string) => line.trim()).join("\n")
+    const content = (await paperLocator.locator("div.v-expansion-panel-content").allInnerTexts()).join("\n")
+    expect(content).toBe(expContent)
+
     await existsOnce(paperLocator.filter({hasText: paper.convertedDate}))
-    // only true if number of tags is small enough to all be shown?
-    // maybe add a test with a paper with lots of tags
+    // if you change how tags are shown when there are very many, might need to update
+    // this. Right now, all tags are present even though you can't necessarily see them all
     expect(await paperLocator.locator("span.v-chip").allInnerTexts()).toStrictEqual(paper.tags)
 }
 
@@ -136,45 +145,81 @@ test("Keyboard shortcuts.", async ({page}) => {
   expect(await isIntersectingViewport(nav)).toBe(false)
 })
 
-test("Add a paper from arxiv", async ({page}) => {
-  const paper = {
-    title: "Verifiably Safe Exploration for End-to-End Reinforcement Learning",
-    tags: ["paper"],
-    priority: "0",
-    date: "2020/07/02",
-    convertedDate: "Jul 2020",
-    content: "Deploying deep reinforcement learning in safety-critical settings requires developing algorithms that obey hard constraints during exploration. This paper contributes a first approach toward enforcing formal safety constraints on end-to-end policies with visual inputs. Our approach draws on recent advances in object detection and automated reasoning for hybrid dynamical systems. The approach is evaluated on a novel benchmark that emphasizes the challenge of safely exploring in the presence of hard constraints. Our benchmark draws from several proposed problem sets for safe learning and includes problems that emphasize challenges such as reward signals that are not aligned with safety constraints. On each of these benchmark problems, our algorithm completely avoids unsafe behavior while remaining competitive at optimizing for as much reward as is safe. We also prove that our method of enforcing the safety constraints preserves all safe policies from the original environment.",
-    authors: "Nathan Hunt, Nathan Fulton, Sara Magliacane, Nghia Hoang, Subhro Das, Armando Solar-Lezama",
-    url: "https://arxiv.org/abs/2007.01223",
-  }
+test("add papers from url", async ({page}) => {
+  // arxiv and youtube
+  const papers = [
+    {
+      title: "Verifiably Safe Exploration for End-to-End Reinforcement Learning",
+      tags: ["paper"],
+      priority: "0",
+      date: "2020/07/02",
+      convertedDate: "Jul 2020",
+      content: "Deploying deep reinforcement learning in safety-critical settings requires developing algorithms that obey hard constraints during exploration. This paper contributes a first approach toward enforcing formal safety constraints on end-to-end policies with visual inputs. Our approach draws on recent advances in object detection and automated reasoning for hybrid dynamical systems. The approach is evaluated on a novel benchmark that emphasizes the challenge of safely exploring in the presence of hard constraints. Our benchmark draws from several proposed problem sets for safe learning and includes problems that emphasize challenges such as reward signals that are not aligned with safety constraints. On each of these benchmark problems, our algorithm completely avoids unsafe behavior while remaining competitive at optimizing for as much reward as is safe. We also prove that our method of enforcing the safety constraints preserves all safe policies from the original environment.",
+      authors: "Nathan Hunt, Nathan Fulton, Sara Magliacane, Nghia Hoang, Subhro Das, Armando Solar-Lezama",
+      url: "https://arxiv.org/abs/2007.01223",
+    },
+    {
+      title: "The Legend of Zelda: Tears of the Kingdom – Coming May 12th, 2023 – Nintendo Switch",
+      tags: ["The Legend of Zelda: Tears of the Kingdom", "nintendo", "game", "gameplay", "video game", "nintendo switch", "The Legend of Zelda: Tears of the Kingdom release date", "Announcement Trailer", "The Legend of Zelda: Tears of the Kingdom trailer", "The Legend of Zelda: Tears of the Kingdom nintendo switch", "botw 2", "breath of the wild 2", "breath of the wild sequel", "zelda breath of the wild", "botw", "botw 2 release date", "new zelda game", "zelda tears of the kingdom", "zelda botw 2", "zelda switch game", "link botw", "watch"],
+      priority: "0",
+      date: "2022-09-13",
+      convertedDate: "Sep 2022",
+      // there's some trailing whitespace that needs to be preserved in one line, so I'm
+      // creating the string this way to prevent trailing whitespace trimming on save
+      // messing it up (it doesn't take multiline strings into account):
+      // https://github.com/Microsoft/vscode/issues/52711
+      content: [
+        "Duration 1M37S",
+        "",
+        "The title for the sequel to The Legend of Zelda: Breath of the Wild has been revealed! The Legend of Zelda: Tears of the Kingdom will launch on Nintendo Switch May 12th, 2023.",
+        "",
+        "Wishlist today: https://www.nintendo.com/store/products/the-legend-of-zelda-tears-of-the-kingdom-switch/",
+        "",
+        "#LegendofZelda #TearsoftheKingdom #NintendoSwitch ",
+        "",
+        "Subscribe for more Nintendo fun! https://goo.gl/HYYsot",
+        "",
+        "Visit Nintendo.com for all the latest! http://www.nintendo.com/",
+        "",
+        "Like Nintendo on Facebook: http://www.facebook.com/Nintendo",
+        "Follow us on Twitter: http://twitter.com/NintendoAmerica",
+        "Follow us on Instagram: http://instagram.com/Nintendo",
+        "Follow us on Pinterest: http://pinterest.com/Nintendo",
+      ].join("\n"),
+      authors: "Nintendo",
+      url: "https://www.youtube.com/watch?v=2SNF4M_v7wc",
+    },
+  ]
 
   await (
     page.locator(CSS_CARD, {hasText: "All Papers"})
     .locator("button:has-text('Open')")
     .click()
   )
-  await page.locator("button:has-text('add_circle_outline')").click()
-  await page.locator("text=URL").fill(paper.url)
-  await page.locator("text=URL").focus()
-  await page.keyboard.press("Enter")
+  for (const paper of papers) {
+    await page.locator("button:has-text('add_circle_outline')").click()
+    await page.locator("text=URL").fill(paper.url)
+    await page.locator("text=URL").focus()
+    await page.keyboard.press("Enter")
 
-  // there's a URL label + input that we used above and then a new one now on the card
-  // to create a new Paper entry, so we'll start subsequent selectors from the dialog.
-  // need this for the save button too
-  const dialog = page.locator("div.v-dialog:has-text('New Paper')")
-  expect(await getInputValueFromLabel(dialog, "Title")).toBe(paper.title)
-  expect(await dialog.locator("label:has-text('Tags') + div.v-select__selections").allInnerTexts()).toStrictEqual(paper.tags)
-  expect(await getInputValueFromLabel(dialog, "Priority")).toBe(paper.priority)
-  expect(await getInputValueFromLabel(dialog, "Date (YYYY/MM/DD)")).toBe(paper.date)
-  expect(await getTextAreaValueFromLabel(dialog, "Content")).toBe(paper.content)
-  expect(await getInputValueFromLabel(dialog, "Authors")).toBe(paper.authors)
-  expect(await getInputValueFromLabel(dialog, "URL")).toBe(paper.url)
-  await dialog.locator("button:has-text('Save')").click()
+    // there's a URL label + input that we used above and then a new one now on the card
+    // to create a new Paper entry, so we'll start subsequent selectors from the dialog.
+    // need this for the save button too
+    const dialog = page.locator("div.v-dialog:has-text('New Paper')")
+    expect(await getInputValueFromLabel(dialog, "Title")).toBe(paper.title)
+    expect(await dialog.locator("label:has-text('Tags') + div.v-select__selections").allInnerTexts()).toStrictEqual([paper.tags.join("\n")])
+    expect(await getInputValueFromLabel(dialog, "Priority")).toBe(paper.priority)
+    expect(await getInputValueFromLabel(dialog, "Date (YYYY/MM/DD)")).toBe(paper.date)
+    expect(await getTextAreaValueFromLabel(dialog, "Content")).toBe(paper.content)
+    expect(await getInputValueFromLabel(dialog, "Authors")).toBe(paper.authors)
+    expect(await getInputValueFromLabel(dialog, "URL")).toBe(paper.url)
+    await dialog.locator("button:has-text('Save')").click()
 
-  await checkPaper(page, paper)
-  // test fails if you don't wait. I think the new entry hasn't been saved yet, so
-  // reloading too fast gives a blank page. Maybe find a better way to do this
-  await page.waitForTimeout(2000)
-  await page.reload()
-  await checkPaper(page, paper)
+    await checkPaper(page, paper)
+    // test fails if you don't wait. I think the new entry hasn't been saved yet, so
+    // reloading too fast gives a blank page. Maybe find a better way to do this
+    await page.waitForTimeout(2000)
+    await page.reload()
+    await checkPaper(page, paper)
+  }
 })
