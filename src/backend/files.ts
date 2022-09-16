@@ -116,11 +116,8 @@ function fromMarkdown(md: string, DefaultEntryClass?: typeof Entry) {
       console.error(md)
       throw Error("No entryClass found but DefaultEntryClass was not defined!")
     }
-    const entry = new DefaultEntryClass()
+    const entry = new DefaultEntryClass(header)
     entry.content = content
-    // there may be custom metadata on imported files, so make sure to keep it
-    // TODO: what if extraParams collide with the normal metadata we save?
-    entry.extraParams = header
     return entry
   }
 

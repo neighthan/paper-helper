@@ -271,8 +271,12 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
       if (entry.title === "") {
         entry.title = file.name.replace(".md", "")
       }
-      entry.timeAdded = file.lastModified
-      entry.tags.push(...this.savedQueryTags)
+      // entry.timeAdded = file.lastModified
+      for (const tag of this.savedQueryTags) {
+        if (!entry.tags.includes(tag)) {
+          entry.tags.push(tag)
+        }
+      }
       await writeEntryFile(entry, false)
     }
     // TODO: probably don't need to call this now. Just push to list of files?
