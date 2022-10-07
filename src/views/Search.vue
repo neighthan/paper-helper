@@ -128,6 +128,7 @@ import {Snackable} from "@/components/Snackbar.vue"
 import {deleteEntryFile, exportFiles, fromMarkdown, importFiles, readAllEntries, readEntryFile, writeEntryFile} from "@/backend/files"
 import {loadSavedQuery, SavedQuery} from "@/backend/savedQueries"
 import Settings from "@/backend/settings"
+import {gitCommit} from "@/backend/git"
 
 const EntryTypes = getEntryTypes()
 type ValueOf<T> = T[keyof T]
@@ -251,8 +252,6 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     const vue = this
     const file_picker = document.createElement("input")
     file_picker.type = "file"
-    // file_picker.accept = "application/json"
-    // file_picker.accept = "application/markdown"
     file_picker.accept = ".md"
     file_picker.multiple = true
     file_picker.addEventListener("change", function(event) {
@@ -264,7 +263,9 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     })
     file_picker.click()
   }
+  /** Commit before and after importing files to make it safer. */
   async importFiles(mdFiles: FileList) {
+    await gitCommit(`Before importing ${mdFiles.length} files on ${new Date()}.`)
     for (const file of mdFiles) {
       const md = await file.text()
       const entry = fromMarkdown(md, this.EntryClass)
@@ -279,6 +280,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
       }
       await writeEntryFile(entry, false)
     }
+    await gitCommit(`After importing ${mdFiles.length} files on ${new Date()}.`)
     // TODO: probably don't need to call this now. Just push to list of files?
     // well, then you need to apply the savedquery yourself, though, so maybe do
     // keep this...
