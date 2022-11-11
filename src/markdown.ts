@@ -1,11 +1,14 @@
 import hljs from "highlight.js"
 import MarkdownIt from "markdown-it"
 import MdFootnotes from "markdown-it-footnote"
+import markdownItTocDoneRight from "markdown-it-toc-done-right"
+import anchor from "markdown-it-anchor"
 import {DB} from "./db"
 
 const MdRenderer = new MarkdownIt({
   html: true,
   breaks: true,
+  linkify: true,
   highlight: (str, lang) => {
     if (lang && hljs.getLanguage(lang)) {
       try {
@@ -15,7 +18,10 @@ const MdRenderer = new MarkdownIt({
     return ""
   }
 })
-MdRenderer.use(MdFootnotes)
+MdRenderer
+  .use(MdFootnotes)
+  .use(anchor)
+  .use(markdownItTocDoneRight)
 let imgCache: {[key: string]: string} = {}
 
 
@@ -55,8 +61,22 @@ function addMergeConflictStyling(md: string, callback?: any) {
   return lines.join("\n")
 }
 
+function addTOCStyle(md: string, callback?: any) {
+  const style = `
+<style>
+  ol { counter-reset: list-item; }
+  li { display: block; counter-increment: list-item; }
+  li:before { content: counters(list-item,'.') ' '; }
+</style>
+`
+  if (md.startsWith("[toc]")) {
+    return style + md
+  }
+  return md
+}
 
 function processMdBeforeRender(md: string, callback?: any) {
+  md = addTOCStyle(md, callback)
   md = includeImgs(md, callback)
   md = addMergeConflictStyling(md, callback)
   // md = addCollapsers(md)
