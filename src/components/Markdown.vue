@@ -12,14 +12,15 @@ export default class Markdown extends Vue {
   @Prop() private mdString!: string
 
   get markdown() {
-    return renderMarkdown(this.mdString)
-    // return renderMarkdown(this.mdString, () => {
-      // This is just to make Vue re-render by making it think the text changed.
-      // Is there a better method for this?
-      // let text = this.text
-      // this.text = ""
-      // this.text = text
-    // })
+    const {html, callbacks} = renderMarkdown(this.mdString)
+    if (callbacks.length) {
+      this.$nextTick().then(() => {
+        for (const callback of callbacks) {
+          callback()
+        }
+      })
+    }
+    return html
   }
 }
 </script>
