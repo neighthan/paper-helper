@@ -50,8 +50,7 @@
       </v-card>
     </v-expansion-panel-header>
     <v-expansion-panel-content>
-      <div class="abstract" v-html="mdNotes" style="text-align: left; word-wrap: break-word">
-      </div>
+      <Markdown :mdString="this.entry.notes"/>
     </v-expansion-panel-content>
   </div>
 </template>
@@ -59,9 +58,9 @@
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator"
 import {Entry} from "@/entries/entry"
-import {renderMarkdown} from "../markdown"
+import Markdown from "@/components/Markdown.vue"
 
-@Component
+@Component({components: {Markdown}})
 export default class ExpansionItem extends Vue {
   @Prop() private entry!: Entry
   editingPriority = false
@@ -94,23 +93,10 @@ export default class ExpansionItem extends Vue {
       this.$emit("updatePriority", this.entry, this.priority)
     }
   }
-  get mdNotes() {
-    return renderMarkdown(this.entry.notes, () => {
-      // This is just to make Vue re-render by making it think the abstract changed.
-      // Is there a better method for this?
-      const notes = this.entry.notes
-      Vue.set(this.entry, "notes", "")
-      Vue.set(this.entry, "notes", notes)
-    })
-  }
 }
 </script>
 
 <style scoped lang="scss">
-.abstract {
-  font-size: medium;
-}
-
 .v-expansion-panel-header {
   padding: 10px 16px;
 }
