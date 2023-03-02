@@ -7,16 +7,15 @@ import { setupDirs } from "./backend/files"
 
 import { listAllFiles } from "./debug"
 import git from "isomorphic-git"
-import {FS} from "@/backend/files"
-import {gitLog} from "./backend/git"
+import {FS, CFS} from "@/backend/files"
 
 window.onload = () => {
   const devMode = (<any> window).webpackHotUpdate !== undefined
   if (devMode) {
     ;(window as any).listAllFiles = listAllFiles
     ;(window as any).git = git
-    ;(window as any).fs = FS
-    ;(window as any).gitLog = gitLog
+    ;(window as any).FS = FS
+    ;(window as any).CFS = CFS
   }
 }
 

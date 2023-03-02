@@ -27,9 +27,22 @@ async function gitInit() {
   await git.setConfig({fs: CFS, dir: GIT_DIR, path: "user.name", value: "note-taker"})
 }
 
-function gitLog(depth: number) {
-  return git.log({fs: CFS, dir: GIT_DIR, depth: depth})
+async function getCommitHistory(filepath: string) {
+  filepath = relativize(filepath)
+  const commits = await git.log({fs: CFS, dir: GIT_DIR, filepath: filepath})
+  return commits.map(c => ({oid: c.oid, timestamp: c.commit.committer.timestamp * 1000}))
 }
+
+async function readFileAtCommit(filepath: string, oid: string) {
+  const {blob} = await git.readBlob({
+    fs: CFS,
+    dir: GIT_DIR,
+    oid: oid,
+    filepath: relativize(filepath),
+  })
+  return new TextDecoder().decode(blob)
+}
+
 
 /**
  * Commits if the most recent commit wasn't today or if there were no commits yet.
@@ -73,4 +86,4 @@ function relativize(path: string) {
   return path.startsWith("/") ? path.slice(1) : path
 }
 
-export {gitAdd, gitCommit, gitCommitIfNewDay, gitRm, gitInit, gitLog}
+export {gitAdd, gitCommit, gitCommitIfNewDay, gitRm, gitInit, getCommitHistory, readFileAtCommit}
