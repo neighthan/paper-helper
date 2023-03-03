@@ -10,11 +10,19 @@ import {CFS, FS} from "@/backend/files"
 
 const GIT_DIR = "/"
 
+interface SimpleCommit {
+  oid: string
+  timestamp: number
+  contents: string
+}
+
 async function gitAdd(filepath: string) {
   await git.add({fs: CFS, filepath: relativize(filepath), dir: GIT_DIR})
 }
 
 async function gitCommit(message?: string) {
+  // TODO: it seems like it will even do empy commits? Check if there are changes first
+  // and only commit if so.
   await git.commit({fs: CFS, message: message ?? "", dir: GIT_DIR})
 }
 
@@ -27,10 +35,10 @@ async function gitInit() {
   await git.setConfig({fs: CFS, dir: GIT_DIR, path: "user.name", value: "note-taker"})
 }
 
-async function getCommitHistory(filepath: string) {
+async function getCommitHistory(filepath: string): Promise<SimpleCommit[]> {
   filepath = relativize(filepath)
   const commits = await git.log({fs: CFS, dir: GIT_DIR, filepath: filepath})
-  return commits.map(c => ({oid: c.oid, timestamp: c.commit.committer.timestamp * 1000}))
+  return commits.map(c => ({oid: c.oid, timestamp: c.commit.committer.timestamp * 1000, contents: ""}))
 }
 
 async function readFileAtCommit(filepath: string, oid: string) {
@@ -60,11 +68,12 @@ async function gitCommitIfNewDay(message?: string) {
     return gitCommit(message)
   }
   const prevCommit = prevCommits[0].commit
-  // timezoneOffset is in minutes, so have to convert to ms
+  // timezoneOffset is in minutes and timestamp in seconds, so have to convert to ms
   const prevDate = new Date(
-    prevCommit.committer.timestamp + prevCommit.committer.timezoneOffset * 60 * 1000
+    (prevCommit.committer.timestamp + prevCommit.committer.timezoneOffset * 60) * 1000
   )
   if (!wasToday(prevDate)) {
+    console.log(`New day! Committing. (prev date: ${prevDate}`)
     return gitCommit(message)
   }
 }
@@ -86,4 +95,4 @@ function relativize(path: string) {
   return path.startsWith("/") ? path.slice(1) : path
 }
 
-export {gitAdd, gitCommit, gitCommitIfNewDay, gitRm, gitInit, getCommitHistory, readFileAtCommit}
+export {gitAdd, gitCommit, gitCommitIfNewDay, gitRm, gitInit, getCommitHistory, readFileAtCommit, SimpleCommit}
