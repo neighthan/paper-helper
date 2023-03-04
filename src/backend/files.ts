@@ -109,7 +109,6 @@ function parseHeader(md: string) {
  */
 function fromMarkdown(md: string, DefaultEntryClass?: typeof Entry) {
   const {header, content} = parseHeader(md)
-  console.log("header: ", header)
   if (header.entryClass === undefined) {
     // should only happen when importing a new file; then default class is given
     if (DefaultEntryClass === undefined) {
@@ -157,12 +156,21 @@ async function readAllEntries(entryClass: string) {
   return entries
 }
 
-async function writeEntryFile(entry: Entry, hardCommit: boolean) {
+/**
+ * Save `entry`'s data to a file.
+ * @param commit whether to make a commit with the changes to this file and any other
+ *   pending changes. Otherwise, the changes will be staged but not committed.
+ * @param precommit whether to commit any existing changes before committing this file;
+ *   only matters if commit is true. Setting precommit to true guarantees that you'll
+ *   have one commit that only has the changes to the current file (possibly preceded by
+ *   a commit with changes to any other files that are pending).
+ * @returns
+ */
+async function writeEntryFile(entry: Entry, commit: boolean=false, precommit: boolean=true) {
   const path = getEntryPath(entry)
   await writeFile(path, toMarkdown(entry))
-  if (hardCommit) {
-    // first commit anything already in index
-    await gitCommit()
+  if (commit) {
+    if (precommit) await gitCommit()
     await gitAdd(path)
     return gitCommit()
   }
@@ -220,4 +228,5 @@ export {
   saveImg,
   setupDirs,
   mkdir,
+  parseHeader,
 }
