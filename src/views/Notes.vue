@@ -13,11 +13,18 @@
     </v-app-bar>
     <v-main>
       <v-container fluid>
+        <v-slider
+          :max="commits.length"
+          v-model="commitIdx"
+          @change="commitSliderUpdated"
+        ></v-slider>
+
         <MdText
           :entry="entry"
           :password="password"
           @saveStart="saving = true"
           @saveEnd="saving = false"
+          @committed="loadCommits"
           ref="mdText"
         />
       </v-container>
@@ -31,7 +38,9 @@ import NavIcon from "@/components/NavIcon.vue"
 import MdText from "@/components/MdText.vue"
 import { Entry } from "@/entries/entry"
 import { decrypt, stringToCipherBuffer } from "@/crypto"
-import { joinPath, readEntryFile } from "@/backend/files"
+import { getEntryPath, readEntryFile } from "@/backend/files"
+import { getCommitHistory, readFileAtCommit, SimpleCommit } from "@/backend/git"
+import { parseHeader } from "@/backend/files"
 
 @Component({components: {NavIcon, MdText}})
 export default class Notes extends Vue {
@@ -40,6 +49,8 @@ export default class Notes extends Vue {
   entry = new Entry() // filler until you get the real entry
   saving = false
   password: string | null = null
+  commits: SimpleCommit[] = []
+  commitIdx: number = 0
 
   async created() {
     const entry = await readEntryFile(this.entryClass, this.entryId)
@@ -63,6 +74,14 @@ export default class Notes extends Vue {
       }
     }
     this.entry = entry
+    this.loadCommits()
+  }
+
+  async loadCommits() {
+    const fpath = getEntryPath(this.entry)
+    // we want commits from oldest to newest
+    this.commits = (await getCommitHistory(fpath)).reverse()
+    this.commitIdx = this.commits.length
   }
 
   async encryptAbstract() {
@@ -85,8 +104,28 @@ export default class Notes extends Vue {
     this.entry.iv = crypto.getRandomValues(new Uint8Array(12))
   }
 
+  get mdText() {
+    return <MdText> this.$refs.mdText
+  }
+
   saveEntry() {
-    (<MdText> this.$refs.mdText).saveEntry(false)
+    this.mdText.saveEntry(false)
+  }
+
+  async commitSliderUpdated() {
+    if (this.commitIdx == this.commits.length) {
+      this.mdText.showPrevCommitText = false
+    } else {
+      const fpath = getEntryPath(this.entry)
+      const commit = this.commits[this.commitIdx]
+      // console.log(new Date(commit.timestamp))
+      // TODO: cache the text (or the Entry) to commit.contents and use that next
+      // time?
+      const md = await readFileAtCommit(fpath, commit.oid)
+      const {content} = parseHeader(md)
+      this.mdText.prevCommitText = content
+      this.mdText.showPrevCommitText = true
+    }
   }
 }
 </script>

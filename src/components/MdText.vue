@@ -1,15 +1,29 @@
 <template>
   <v-row id="textMd">
     <v-col v-if="textVisible" style="width: 50vh">
-      <v-textarea no-resize ref="textarea" autofocus v-model="text" id="mdText"
+      <v-textarea v-if="showPrevCommitText"
+        no-resize
+        v-model="prevCommitText"
+        readonly
+        id="prevMdText"
+      ></v-textarea>
+      <v-textarea v-else
+        no-resize
+        ref="textarea"
+        autofocus
+        v-model="text"
+        id="mdText"
         @keydown.ctrl.s.prevent="saveEntry(false)"
+        @keydown.ctrl.shift.alt.s.prevent="saveEntry(false, true)"
         @keydown.tab.prevent="tab"
         @keydown.ctrl.c.prevent="execCutCopy('copy')"
         @keydown.ctrl.x.prevent="execCutCopy('cut')"
+        :disabled="showPrevCommitText"
       ></v-textarea>
     </v-col>
     <v-col v-if="renderVisible" style="width: 50vh">
-      <Markdown :mdString="text"/>
+      <Markdown v-if="showPrevCommitText" :mdString="prevCommitText"/>
+      <Markdown v-else :mdString="text"/>
     </v-col>
   </v-row>
 </template>
@@ -38,6 +52,8 @@ export default class MdText extends Vue {
   text = ""
   textVisible = true
   renderVisible = true
+  prevCommitText = ""
+  showPrevCommitText = false
 
   async created() {
     this.text = this.entry.notesMd
@@ -106,7 +122,7 @@ export default class MdText extends Vue {
       this.renderVisible = !this.renderVisible
     }
   }
-  async saveEntry(autosave: boolean) {
+  async saveEntry(autosave: boolean, commit: boolean=false) {
     if (!autosave) {
       this.$emit("saveStart")
     }
@@ -121,7 +137,10 @@ export default class MdText extends Vue {
     } else {
       this.entry.notesMd = this.text
     }
-    await writeEntryFile(this.entry, false)
+    await writeEntryFile(this.entry, commit)
+    if (commit) {
+      this.$emit("committed")
+    }
     await updateTodos(this.entry)
     if (this.entry instanceof ToDo) {
       this.entry.updateInEntry()
@@ -180,7 +199,15 @@ export default class MdText extends Vue {
   margin-top: 0px;
   padding-top: 0px;
 }
+
+// using a class to set the height for both textareas wasn't working, so using
+// separate ids instead
 #mdText {
   height: calc(97vh - 48px);
+}
+
+#prevMdText {
+  height: calc(97vh - 48px);
+  color: gray;
 }
 </style>
