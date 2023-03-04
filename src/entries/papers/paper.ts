@@ -6,12 +6,16 @@ export class Paper extends Entry {
   authors: string[]
 
   constructor(
-    {url = "", authors = [], date = new Date().toISOString().split("T")[0].replaceAll("-", "/"), ...rest}:
+    {url = "", authors = [], date = "", ...rest}:
     {url?: string, authors?: string[], date?: string, [etc: string]: any} = {}
   ) {
     super(rest)
     this.url = url
     this.authors = authors
-    this.date = date
+    if (date === "") {
+      this.date = new Date(this.timeAdded).toISOString().split("T")[0].replaceAll("-", "/")
+    } else {
+      this.date = date
+    }
   }
 }
