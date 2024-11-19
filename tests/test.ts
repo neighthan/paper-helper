@@ -88,6 +88,21 @@ async function isIntersectingViewport(locator: Locator): Promise<boolean> {
   })
 }
 
+async function checkPaper(page: Page, paper: any) {
+  // now check that the saved entry looks right
+  const paperLocator = page.locator(CSS_EXP_PANEL, {hasText: paper.title})
+  await paperLocator.click()
+  // the lines are trimmed during processing the new entry
+  const expContent = paper.content.split("\n").map((line: string) => line.trim()).join("\n")
+  const content = (await paperLocator.locator("div.v-expansion-panel-content").allInnerTexts()).join("\n")
+  expect(content).toBe(expContent)
+
+  await existsOnce(paperLocator.filter({hasText: paper.convertedDate}))
+  // if you change how tags are shown when there are very many, might need to update
+  // this. Right now, all tags are present even though you can't necessarily see them all
+  expect(await paperLocator.locator("span.v-chip").allInnerTexts()).toStrictEqual(paper.tags)
+}
+
 test.beforeEach(async ({ page }) => {
   page.setDefaultTimeout(5000)
   await page.goto(DEV_URL)
@@ -97,7 +112,7 @@ test.use({
   ignoreHTTPSErrors: true,
 })
 
-test('test initial saved queries + add new one', async ({ page }) => {
+test('test initial saved queries + add new one + test tag inheritance', async ({ page }) => {
   const cards = page.locator(CSS_CARD)
   const titles = cards.locator(CSS_CARD_TITLE)
   const savedQueries = ["All Papers", "All ToDos"]
@@ -117,22 +132,10 @@ test('test initial saved queries + add new one', async ({ page }) => {
   await cards.filter({hasText: "RL"}).click()
   expect(await titles.allInnerTexts()).toStrictEqual(savedQueries)
   expect(await cards.count()).toBe(savedQueries.length)
+
+  // test new entry inheriting the saved query's tags
+
 })
-
-async function checkPaper(page: Page, paper: any) {
-    // now check that the saved entry looks right
-    const paperLocator = page.locator(CSS_EXP_PANEL, {hasText: paper.title})
-    await paperLocator.click()
-    // the lines are trimmed during processing the new entry
-    const expContent = paper.content.split("\n").map((line: string) => line.trim()).join("\n")
-    const content = (await paperLocator.locator("div.v-expansion-panel-content").allInnerTexts()).join("\n")
-    expect(content).toBe(expContent)
-
-    await existsOnce(paperLocator.filter({hasText: paper.convertedDate}))
-    // if you change how tags are shown when there are very many, might need to update
-    // this. Right now, all tags are present even though you can't necessarily see them all
-    expect(await paperLocator.locator("span.v-chip").allInnerTexts()).toStrictEqual(paper.tags)
-}
 
 test("Keyboard shortcuts.", async ({page}) => {
   const nav = page.locator("nav.v-navigation-drawer")
@@ -189,6 +192,10 @@ test("add papers from url", async ({page}) => {
       authors: "Nintendo",
       url: "https://www.youtube.com/watch?v=2SNF4M_v7wc",
     },
+    // once adding reddit
+    // {
+    //   url: "https://www.reddit.com/r/MachineLearning/comments/xbynjy/r_learning_with_differentiable_algorithms/"
+    // },
   ]
 
   await (
@@ -222,4 +229,19 @@ test("add papers from url", async ({page}) => {
     await page.reload()
     await checkPaper(page, paper)
   }
+})
+
+test("Create new entry, edit it, reload page and check.", async ({page}) => {
+
+})
+
+// is there a way to say to ignore beforeEach for this test only?
+// clipboard support in playwright isn't great?
+// https://github.com/microsoft/playwright/issues/2511
+// so if this isn't working, may need to give up on testing
+test("paste an image", async ({page}) => {
+  // not sure where to pull a test image from that will be stable; maybe wikipedia?
+  const imgURL = "https://en.wikipedia.org/wiki/Four_color_theorem"
+  await page.goto(imgURL)
+  await page.goto(DEV_URL)
 })

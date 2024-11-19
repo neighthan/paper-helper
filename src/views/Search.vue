@@ -64,11 +64,11 @@
 
           <v-tooltip open-delay="1000">
             <template v-slot:activator="{on}">
-              <v-btn icon v-on="on" @click="syncDropbox">
+              <v-btn icon v-on="on" @click="syncGithub">
                 <v-icon>backup</v-icon>
               </v-btn>
             </template>
-            <span>Sync to Dropbox</span>
+            <span>Sync to GitHub</span>
           </v-tooltip>
 
           <v-tooltip open-delay="1000">
@@ -120,7 +120,7 @@ import ToDoDialog from "@/entries/todos/ToDoDialog.vue"
 import ExpansionItem from "@/components/ExpansionItem.vue"
 import NavIcon from "@/components/NavIcon.vue"
 import {importInto} from "dexie-export-import"
-import {syncDropbox as syncDropbox_} from "../dbx"
+import {syncGithub as syncGithub_} from "../github"
 import {getPaperFromArxiv, getDataFromYouTube} from "../utils"
 import {updateTodos, deleteTodos, ToDo} from "@/entries/todos/todos"
 import {getEntryTypes} from "@/entries/entries"
@@ -155,6 +155,10 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   settings = Settings
 
   async created() {
+    this.onSavedQueryChanged()
+  }
+
+  async onSavedQueryChanged() {
     this.entryKey = <any> (await loadSavedQuery(this.queryId)).entryType
     if (EntryTypes[this.entryKey] === undefined) {
       console.error(`No entry type with key ${this.entryKey}!`)
@@ -226,12 +230,14 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
     }
     this.showEntryDialog(data)
   }
-  async syncDropbox() {
-    // TODO!!!
-    // const msgs = await syncDropbox_([this.entryTable])
-    // ;(this.$root as unknown as Snackable).snackbar.show(
-    //   msgs, {timeoutMs: 3000, btnName: "Fix Merge Conflicts", callback: this.goToMergeConflicts}
-    // )
+  async syncGithub() {
+    const {msg, success} = await syncGithub_()
+    if (msg === "") return
+    const btnName = success ? undefined : "Fix Merge Conflicts"
+    const callback = success ? undefined : this.goToMergeConflicts
+    ;(this.$root as unknown as Snackable).snackbar.show(
+      [msg], {timeoutMs: 3000, btnName, callback}
+    )
   }
   async download_data() {
     try {
@@ -265,6 +271,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
   }
   /** Commit before and after importing files to make it safer. */
   async importFiles(mdFiles: FileList) {
+    console.log(`Before importing ${mdFiles.length} files on ${new Date()}.`)
     await gitCommit(`Before importing ${mdFiles.length} files on ${new Date()}.`)
     for (const file of mdFiles) {
       const md = await file.text()
@@ -281,6 +288,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
       await writeEntryFile(entry, false)
     }
     await gitCommit(`After importing ${mdFiles.length} files on ${new Date()}.`)
+    console.log(`After importing ${mdFiles.length} files on ${new Date()}.`)
     // TODO: probably don't need to call this now. Just push to list of files?
     // well, then you need to apply the savedquery yourself, though, so maybe do
     // keep this...
@@ -317,6 +325,7 @@ export default class Home<E extends ValueOf<typeof EntryTypes>> extends Vue {
       await writeEntryFile(query, false)
     }
     this.$router.push({path: `/search/${query.id}`})
+    await this.onSavedQueryChanged()
   }
   showEntryDialog(entry: E["class"]) {
     // todo: ensure all dialogs have .show?

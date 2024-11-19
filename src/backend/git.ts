@@ -5,10 +5,12 @@ the commit, whether they were modified or not. So I'm storing the modified files
 commit message
 */
 
-import git, { ReadCommitResult } from 'isomorphic-git'
-import {CFS, FS} from "@/backend/files"
+import git, { ReadCommitResult, Errors } from 'isomorphic-git'
+import http from 'isomorphic-git/http/web/index.js'
+import {CFS, fromMarkdown, FS, readEntryFile, readFile, writeEntryFile} from "@/backend/files"
 
 const GIT_DIR = "/"
+const TMP_BRANCH_NAME = "tmp"
 
 interface SimpleCommit {
   oid: string
@@ -30,8 +32,8 @@ async function gitRm(filepath: string) {
   await git.remove({fs: CFS, filepath: relativize(filepath), dir: GIT_DIR})
 }
 
-async function gitInit() {
-  await git.init({fs: CFS, dir: GIT_DIR})
+async function gitSetup() {
+  await gitClone()
   await git.setConfig({fs: CFS, dir: GIT_DIR, path: "user.name", value: "note-taker"})
 }
 
@@ -78,6 +80,115 @@ async function gitCommitIfNewDay(message?: string) {
   }
 }
 
+async function gitPush() {
+  const o = {
+    fs: CFS,
+    http,
+    dir: GIT_DIR,
+    corsProxy: getSavedKey("corsProxy"),
+    url: getAuthUrl(),
+    // author: {
+      // name: "me",
+      // email: "me@com"
+    // }
+  }
+  await git.push(o)
+}
+
+async function gitPull(toTmpBranch: boolean = false) {
+  const o = {
+    fs: CFS,
+    http,
+    dir: GIT_DIR,
+    ref: toTmpBranch? TMP_BRANCH_NAME : "master",
+    corsProxy: getSavedKey("corsProxy"),
+    url: getAuthUrl(),
+    singleBranch: true,
+    // author: {
+      // name: "me",
+      // email: "me@com"
+    // }
+  }
+  await git.pull(o)
+}
+
+async function gitClone() {
+  return git.clone({
+    fs: CFS,
+    http,
+    dir: GIT_DIR,
+    corsProxy: getSavedKey("corsProxy"),
+    url: getAuthUrl(),
+  })
+}
+
+async function gitMerge() {
+  await git.fetch({
+    fs: CFS,
+    http,
+    dir: GIT_DIR,
+    corsProxy: getSavedKey("corsProxy"),
+    url: getAuthUrl(),
+    singleBranch: true,
+    ref: "master",
+  })
+
+  try {
+    await git.merge({
+      fs: CFS,
+      dir: GIT_DIR,
+      ours: "master",
+      theirs: "remotes/origin/master",
+      abortOnConflict: false,
+    })
+  } catch (err) {
+    if (err instanceof Errors.MergeConflictError) {
+      localStorage.setItem("merging", "true")
+      console.log(err.data.filepaths)
+      for (const fpath of err.data.filepaths) {
+        const entry = fromMarkdown(await readFile(`/${fpath}`))
+        entry.tags.push("merge-conflict")
+        await writeEntryFile(entry)
+      }
+      return err.data.filepaths
+    } else throw err
+  }
+  return []
+}
+
+async function gitFinalizeMerge() {
+  // TODO: what files to add? Should be only those that
+  // were modified. Maybe save that to localStorage from
+  // err.data above?
+  // These will probably already be staged because when the user saves a file,
+  // it's added to the index. But if they just want to finalize the merge
+  // without fixing all the conflicts (leaving the conflict markers in), then
+  // they won't have saved the files, so we may need to add them explicitly.
+  // Oh, what if we just add them all in gitMerge? Then if the user goes to
+  // fix them, they'll just be added again, but if not, we have them already.
+  // So we wouldn't need an add here, just commit and delete the tmp branch.
+
+  // or.. if any changed files are always added anyway, then adding all files is
+  // fine, so we can jukst do git add . here and it should take care of the merge
+  // conflict files too if they weren't added yet.
+  await git.add({
+    fs: CFS,
+    dir: GIT_DIR,
+    filepath: '.',
+  })
+
+  await git.commit({
+    fs: CFS,
+    dir: GIT_DIR,
+    // ref: 'main',
+    message: "Merge Github into local.",
+    parent: ["master", "remotes/origin/master"],
+  })
+
+  await gitPush()
+  localStorage.setItem("merging", "false")
+}
+
 /**
  * Check if `today` was some time today (true if so, false if not).
  */
@@ -92,7 +203,28 @@ function wasToday(today: Date) {
 
 function relativize(path: string) {
   // needs to be relative to GIT_DIR
-  return path.startsWith("/") ? path.slice(1) : path
+  return path.startsWith(GIT_DIR) ? path.slice(GIT_DIR.length) : path
 }
 
-export {gitAdd, gitCommit, gitCommitIfNewDay, gitRm, gitInit, getCommitHistory, readFileAtCommit, SimpleCommit}
+function getAuthUrl () {
+  const username = getSavedKey("username")
+  const repoName = getSavedKey("repoName")
+  const url = new URL(`https://github.com/${username}/${repoName}`)
+  url.username = username
+  url.password = getSavedKey("oauthToken")
+  return url.toString()
+}
+
+function getSavedKey(name: string): string {
+  let value = localStorage.getItem(name)
+  if (value === null) {
+    value = prompt(`Enter a value for ${name}:`)
+    if (value === null) {
+      throw new Error(`No value given for ${name}`)
+    }
+    localStorage.setItem(name, value)
+  }
+  return value
+}
+
+export {gitAdd, gitCommit, gitCommitIfNewDay, gitRm, gitSetup, getCommitHistory, readFileAtCommit, SimpleCommit, gitPush, gitPull, gitClone, gitMerge, gitFinalizeMerge}

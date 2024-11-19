@@ -1,7 +1,7 @@
 import { getEntryTypes } from '@/entries/entries'
 import { Entry } from '@/entries/entry'
 import LightningFS from '@isomorphic-git/lightning-fs'
-import { gitAdd, gitCommit, gitCommitIfNewDay, gitInit, gitRm } from './git'
+import { gitAdd, gitCommit, gitCommitIfNewDay, gitRm } from './git'
 
 const FS_NAME = "notes"
 const CFS = new LightningFS(FS_NAME)
@@ -158,15 +158,23 @@ async function readAllEntries(entryClass: string) {
 
 /**
  * Save `entry`'s data to a file.
- * @param commit whether to make a commit with the changes to this file and any other
+ *
+ * If a merge commit is in progress, no new-day commit will be made. You can still force
+ * a commit by setting `commit` to true, but this is not recommended and may produce
+ * errors for the merge commit.
+ *
+ * @param commit [false] whether to make a commit with the changes to this file and any other
  *   pending changes. Otherwise, the changes will be staged but not committed.
- * @param precommit whether to commit any existing changes before committing this file;
+ * @param precommit [true] whether to commit any existing changes before committing this file;
  *   only matters if commit is true. Setting precommit to true guarantees that you'll
  *   have one commit that only has the changes to the current file (possibly preceded by
  *   a commit with changes to any other files that are pending).
  * @returns
  */
 async function writeEntryFile(entry: Entry, commit: boolean=false, precommit: boolean=true) {
+  if (entry.tags.includes("merge-conflict")) {
+    entry.tags = entry.tags.filter(t => t !== "merge-conflict")
+  }
   const path = getEntryPath(entry)
   await writeFile(path, toMarkdown(entry))
   if (commit) {
@@ -175,6 +183,7 @@ async function writeEntryFile(entry: Entry, commit: boolean=false, precommit: bo
     return gitCommit()
   }
   await gitAdd(path)
+  if (localStorage.getItem("merging") === "true") return
   return gitCommitIfNewDay()
 }
 
@@ -199,7 +208,6 @@ async function setupDirs() {
     mkdir("/entries/ToDo"),
     mkdir("/entries/Paper"),
     mkdir("/entries/SavedQuery"),
-    gitInit(),
   ]
   return Promise.all(promises)
   // for (let EntryType of Object.values(EntryTypes)) {
